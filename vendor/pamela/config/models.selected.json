@@ -1,0 +1,5508 @@
+{
+  "generated_utc": "2026-07-06T18:06:46.507Z",
+  "catalog_fetched_utc": "2026-07-06T18:06:34.842Z",
+  "prompts_version": "1.0.0",
+  "note": "MACHINE-GENERATED, HUMAN-CURATED. Review family_guess (add \"family\" to override), set included:false + exclusion_reason to drop models. See config/README.md rule 3.",
+  "assumptions": {
+    "avg_input_tokens": 66,
+    "output_tokens": 6,
+    "requests_per_model": 1980
+  },
+  "exclusion_rules": [
+    "non-text output",
+    "moderation/guard model",
+    "embedding/audio/image/video model",
+    "base (non-instruct) model",
+    "specialized (code/math/medical/roleplay)",
+    "mandatory reasoning (single-pass one-token completion undefined)",
+    "search/agentic endpoint (output not a pure model prior)",
+    "context too small (<2048)",
+    "deprecated/preview naming",
+    "rolling 'latest' alias for a concrete dated model",
+    "meta-router / variable pricing",
+    "inference-mode/serving variant of a model already in the catalog",
+    "free endpoint duplicate of a paid model in the catalog",
+    "free-tier only; account-level daily cap makes collection infeasible"
+  ],
+  "summary": {
+    "catalog_total": 342,
+    "included": 165,
+    "excluded": 177,
+    "free_tier_included": 0,
+    "est_total_cost_usd_main": 33.7
+  },
+  "models": [
+    {
+      "id": "~anthropic/claude-fable-latest",
+      "name": "Anthropic: Claude Fable Latest",
+      "developer": "~anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00005
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.9008
+    },
+    {
+      "id": "~anthropic/claude-haiku-latest",
+      "name": "Anthropic Claude Haiku Latest",
+      "developer": "~anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000005
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1901
+    },
+    {
+      "id": "~anthropic/claude-opus-latest",
+      "name": "Anthropic: Claude Opus Latest",
+      "developer": "~anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000025
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.9504
+    },
+    {
+      "id": "~anthropic/claude-sonnet-latest",
+      "name": "Anthropic Claude Sonnet Latest",
+      "developer": "~anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3802
+    },
+    {
+      "id": "~google/gemini-flash-latest",
+      "name": "Google Gemini Flash Latest",
+      "developer": "~google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000015,
+        "completion": 0.000009
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3029
+    },
+    {
+      "id": "~google/gemini-pro-latest",
+      "name": "Google Gemini Pro Latest",
+      "developer": "~google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4039
+    },
+    {
+      "id": "~moonshotai/kimi-latest",
+      "name": "MoonshotAI Kimi Latest",
+      "developer": "~moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6.6e-7,
+        "completion": 0.00000341
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1268
+    },
+    {
+      "id": "~openai/gpt-latest",
+      "name": "OpenAI GPT Latest",
+      "developer": "~openai",
+      "family_guess": "gpt",
+      "context_length": 1050000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.0098
+    },
+    {
+      "id": "~openai/gpt-mini-latest",
+      "name": "OpenAI GPT Mini Latest",
+      "developer": "~openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-7,
+        "completion": 0.0000045
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1515
+    },
+    {
+      "id": "ai21/jamba-large-1.7",
+      "name": "AI21: Jamba Large 1.7",
+      "developer": "ai21",
+      "family_guess": "other",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "aion-labs/aion-1.0",
+      "name": "AionLabs: Aion-1.0",
+      "developer": "aion-labs",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000004,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "model unavailable at provider (Unknown model)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.6178
+    },
+    {
+      "id": "aion-labs/aion-1.0-mini",
+      "name": "AionLabs: Aion-1.0-Mini",
+      "developer": "aion-labs",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 7e-7,
+        "completion": 0.0000014
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "model unavailable at provider (Unknown model)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1081
+    },
+    {
+      "id": "aion-labs/aion-2.0",
+      "name": "AionLabs: Aion-2.0",
+      "developer": "aion-labs",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 0.0000016
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1236
+    },
+    {
+      "id": "aion-labs/aion-rp-llama-3.1-8b",
+      "name": "AionLabs: Aion-RP 1.0 (8B)",
+      "developer": "aion-labs",
+      "family_guess": "llama",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 0.0000016
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1236
+    },
+    {
+      "id": "allenai/olmo-3-32b-think",
+      "name": "AllenAI: Olmo 3 32B Think",
+      "developer": "allenai",
+      "family_guess": "olmo",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0255
+    },
+    {
+      "id": "amazon/nova-2-lite-v1",
+      "name": "Amazon: Nova 2 Lite",
+      "developer": "amazon",
+      "family_guess": "nova",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0689
+    },
+    {
+      "id": "amazon/nova-lite-v1",
+      "name": "Amazon: Nova Lite 1.0",
+      "developer": "amazon",
+      "family_guess": "nova",
+      "context_length": 300000,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 2.4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0107
+    },
+    {
+      "id": "amazon/nova-micro-v1",
+      "name": "Amazon: Nova Micro 1.0",
+      "developer": "amazon",
+      "family_guess": "nova",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.5e-8,
+        "completion": 1.4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0062
+    },
+    {
+      "id": "amazon/nova-premier-v1",
+      "name": "Amazon: Nova Premier 1.0",
+      "developer": "amazon",
+      "family_guess": "nova",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.0000125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4752
+    },
+    {
+      "id": "amazon/nova-pro-v1",
+      "name": "Amazon: Nova Pro 1.0",
+      "developer": "amazon",
+      "family_guess": "nova",
+      "context_length": 300000,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 0.0000032
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1426
+    },
+    {
+      "id": "anthracite-org/magnum-v4-72b",
+      "name": "Magnum v4 72B",
+      "developer": "anthracite-org",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000005
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4514
+    },
+    {
+      "id": "anthropic/claude-3-haiku",
+      "name": "Anthropic: Claude 3 Haiku",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.00000125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0475
+    },
+    {
+      "id": "anthropic/claude-fable-5",
+      "name": "Anthropic: Claude Fable 5",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00005
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.9008
+    },
+    {
+      "id": "anthropic/claude-haiku-4.5",
+      "name": "Anthropic: Claude Haiku 4.5",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000005
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1901
+    },
+    {
+      "id": "anthropic/claude-opus-4",
+      "name": "Anthropic: Claude Opus 4",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000015,
+        "completion": 0.000075
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 2.8512
+    },
+    {
+      "id": "anthropic/claude-opus-4.1",
+      "name": "Anthropic: Claude Opus 4.1",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000015,
+        "completion": 0.000075
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 2.8512
+    },
+    {
+      "id": "anthropic/claude-opus-4.5",
+      "name": "Anthropic: Claude Opus 4.5",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.9504
+    },
+    {
+      "id": "anthropic/claude-opus-4.6",
+      "name": "Anthropic: Claude Opus 4.6",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.9504
+    },
+    {
+      "id": "anthropic/claude-opus-4.7",
+      "name": "Anthropic: Claude Opus 4.7",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.9504
+    },
+    {
+      "id": "anthropic/claude-opus-4.7-fast",
+      "name": "Anthropic: Claude Opus 4.7 (Fast)",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00003,
+        "completion": 0.00015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "inference-mode/serving variant of a model already in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 5.7024
+    },
+    {
+      "id": "anthropic/claude-opus-4.8",
+      "name": "Anthropic: Claude Opus 4.8",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.9504
+    },
+    {
+      "id": "anthropic/claude-opus-4.8-fast",
+      "name": "Anthropic: Claude Opus 4.8 (Fast)",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00005
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "inference-mode/serving variant of a model already in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.9008
+    },
+    {
+      "id": "anthropic/claude-sonnet-4",
+      "name": "Anthropic: Claude Sonnet 4",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5702
+    },
+    {
+      "id": "anthropic/claude-sonnet-4.5",
+      "name": "Anthropic: Claude Sonnet 4.5",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5702
+    },
+    {
+      "id": "anthropic/claude-sonnet-4.6",
+      "name": "Anthropic: Claude Sonnet 4.6",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5702
+    },
+    {
+      "id": "anthropic/claude-sonnet-5",
+      "name": "Anthropic: Claude Sonnet 5",
+      "developer": "anthropic",
+      "family_guess": "claude",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3802
+    },
+    {
+      "id": "arcee-ai/coder-large",
+      "name": "Arcee AI: Coder Large",
+      "developer": "arcee-ai",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0748
+    },
+    {
+      "id": "arcee-ai/trinity-large-thinking",
+      "name": "Arcee AI: Trinity Large Thinking",
+      "developer": "arcee-ai",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0422
+    },
+    {
+      "id": "arcee-ai/trinity-mini",
+      "name": "Arcee AI: Trinity Mini",
+      "developer": "arcee-ai",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4.5e-8,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0077
+    },
+    {
+      "id": "arcee-ai/virtuoso-large",
+      "name": "Arcee AI: Virtuoso Large",
+      "developer": "arcee-ai",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "unavailable at provider (non-serverless; requires dedicated deployment, HTTP 400)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1123
+    },
+    {
+      "id": "baidu/ernie-4.5-vl-424b-a47b",
+      "name": "Baidu: ERNIE 4.5 VL 424B A47B ",
+      "developer": "baidu",
+      "family_guess": "ernie",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4.2e-7,
+        "completion": 0.00000125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0697
+    },
+    {
+      "id": "bytedance-seed/seed-1.6",
+      "name": "ByteDance Seed: Seed 1.6",
+      "developer": "bytedance-seed",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0564
+    },
+    {
+      "id": "bytedance-seed/seed-1.6-flash",
+      "name": "ByteDance Seed: Seed 1.6 Flash",
+      "developer": "bytedance-seed",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-8,
+        "completion": 3e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0134
+    },
+    {
+      "id": "bytedance-seed/seed-2.0-lite",
+      "name": "ByteDance Seed: Seed-2.0-Lite",
+      "developer": "bytedance-seed",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0564
+    },
+    {
+      "id": "bytedance-seed/seed-2.0-mini",
+      "name": "ByteDance Seed: Seed-2.0-Mini",
+      "developer": "bytedance-seed",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0178
+    },
+    {
+      "id": "bytedance/ui-tars-1.5-7b",
+      "name": "ByteDance: UI-TARS 7B ",
+      "developer": "bytedance",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0154
+    },
+    {
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Venice: Uncensored (free)",
+      "developer": "cognitivecomputations",
+      "family_guess": "mistral",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free-tier only; account-level daily cap makes collection infeasible",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "cohere/command-a",
+      "name": "Cohere: Command A",
+      "developer": "cohere",
+      "family_guess": "command",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "cohere/command-r-08-2024",
+      "name": "Cohere: Command R (08-2024)",
+      "developer": "cohere",
+      "family_guess": "command",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "cohere/command-r-plus-08-2024",
+      "name": "Cohere: Command R+ (08-2024)",
+      "developer": "cohere",
+      "family_guess": "command",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "cohere/command-r7b-12-2024",
+      "name": "Cohere: Command R7B (12-2024)",
+      "developer": "cohere",
+      "family_guess": "command",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.75e-8,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0067
+    },
+    {
+      "id": "cohere/north-mini-code:free",
+      "name": "Cohere: North Mini Code (free)",
+      "developer": "cohere",
+      "family_guess": "command",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "deepcogito/cogito-v2.1-671b",
+      "name": "Deep Cogito: Cogito v2.1 671B",
+      "developer": "deepcogito",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00000125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1782
+    },
+    {
+      "id": "deepseek/deepseek-chat",
+      "name": "DeepSeek: DeepSeek V3",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2.002e-7,
+        "completion": 8.001e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0357
+    },
+    {
+      "id": "deepseek/deepseek-chat-v3-0324",
+      "name": "DeepSeek: DeepSeek V3 0324",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 2.4e-7,
+        "completion": 9e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0421
+    },
+    {
+      "id": "deepseek/deepseek-chat-v3.1",
+      "name": "DeepSeek: DeepSeek V3.1",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 2.1e-7,
+        "completion": 7.9e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0368
+    },
+    {
+      "id": "deepseek/deepseek-r1",
+      "name": "DeepSeek: R1",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 7e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1212
+    },
+    {
+      "id": "deepseek/deepseek-r1-0528",
+      "name": "DeepSeek: R1 0528",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.00000215
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0909
+    },
+    {
+      "id": "deepseek/deepseek-r1-distill-llama-70b",
+      "name": "DeepSeek: R1 Distill Llama 70B",
+      "developer": "deepseek",
+      "family_guess": "llama",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.114
+    },
+    {
+      "id": "deepseek/deepseek-v3.1-terminus",
+      "name": "DeepSeek: DeepSeek V3.1 Terminus",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 2.7e-7,
+        "completion": 9.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0466
+    },
+    {
+      "id": "deepseek/deepseek-v3.2",
+      "name": "DeepSeek: DeepSeek V3.2",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2.288e-7,
+        "completion": 3.432e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.034
+    },
+    {
+      "id": "deepseek/deepseek-v3.2-exp",
+      "name": "DeepSeek: DeepSeek V3.2 Exp",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 2.7e-7,
+        "completion": 4.1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0402
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek: DeepSeek V4 Flash",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 9e-8,
+        "completion": 1.8e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0139
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro",
+      "name": "DeepSeek: DeepSeek V4 Pro",
+      "developer": "deepseek",
+      "family_guess": "deepseek",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 4.35e-7,
+        "completion": 8.7e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0672
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "name": "Google: Gemini 2.5 Flash",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0689
+    },
+    {
+      "id": "google/gemini-2.5-flash-image",
+      "name": "Google: Nano Banana (Gemini 2.5 Flash Image)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0689
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite",
+      "name": "Google: Gemini 2.5 Flash Lite",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0178
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Google: Gemini 2.5 Flash Lite Preview 09-2025",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0178
+    },
+    {
+      "id": "google/gemini-2.5-pro",
+      "name": "Google: Gemini 2.5 Pro",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "google/gemini-2.5-pro-preview",
+      "name": "Google: Gemini 2.5 Pro Preview 06-05",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "google/gemini-2.5-pro-preview-05-06",
+      "name": "Google: Gemini 2.5 Pro Preview 05-06",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "google/gemini-3-flash-preview",
+      "name": "Google: Gemini 3 Flash Preview",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.101
+    },
+    {
+      "id": "google/gemini-3-pro-image",
+      "name": "Google: Nano Banana Pro (Gemini 3 Pro Image)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4039
+    },
+    {
+      "id": "google/gemini-3-pro-image-preview",
+      "name": "Google: Nano Banana Pro (Gemini 3 Pro Image Preview)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4039
+    },
+    {
+      "id": "google/gemini-3.1-flash-image",
+      "name": "Google: Nano Banana 2 (Gemini 3.1 Flash Image)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.101
+    },
+    {
+      "id": "google/gemini-3.1-flash-image-preview",
+      "name": "Google: Nano Banana 2 (Gemini 3.1 Flash Image Preview)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.101
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite",
+      "name": "Google: Gemini 3.1 Flash Lite",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0505
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite-image",
+      "name": "Google: Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0505
+    },
+    {
+      "id": "google/gemini-3.1-flash-lite-preview",
+      "name": "Google: Gemini 3.1 Flash Lite Preview",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0505
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview",
+      "name": "Google: Gemini 3.1 Pro Preview",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4039
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview-customtools",
+      "name": "Google: Gemini 3.1 Pro Preview Custom Tools",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048756,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4039
+    },
+    {
+      "id": "google/gemini-3.5-flash",
+      "name": "Google: Gemini 3.5 Flash",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000015,
+        "completion": 0.000009
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3029
+    },
+    {
+      "id": "google/gemma-2-27b-it",
+      "name": "Google: Gemma 2 27B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 8192,
+      "pricing_usd_per_tok": {
+        "prompt": 6.5e-7,
+        "completion": 6.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0927
+    },
+    {
+      "id": "google/gemma-3-12b-it",
+      "name": "Google: Gemma 3 12B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0083
+    },
+    {
+      "id": "google/gemma-3-27b-it",
+      "name": "Google: Gemma 3 27B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-8,
+        "completion": 1.6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0124
+    },
+    {
+      "id": "google/gemma-3-4b-it",
+      "name": "Google: Gemma 3 4B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0077
+    },
+    {
+      "id": "google/gemma-3n-e4b-it",
+      "name": "Google: Gemma 3n 4B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 1.2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0093
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it",
+      "name": "Google: Gemma 4 26B A4B ",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 3.3e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0118
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "name": "Google: Gemma 4 26B A4B  (free)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "google/gemma-4-31b-it",
+      "name": "Google: Gemma 4 31B",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.2e-7,
+        "completion": 3.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0198
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "name": "Google: Gemma 4 31B (free)",
+      "developer": "google",
+      "family_guess": "gemini",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "google/lyria-3-clip-preview",
+      "name": "Google: Lyria 3 Clip Preview",
+      "developer": "google",
+      "family_guess": "other",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "google/lyria-3-pro-preview",
+      "name": "Google: Lyria 3 Pro Preview",
+      "developer": "google",
+      "family_guess": "other",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "gryphe/mythomax-l2-13b",
+      "name": "MythoMax 13B",
+      "developer": "gryphe",
+      "family_guess": "other",
+      "context_length": 4096,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 6e-8
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0086
+    },
+    {
+      "id": "ibm-granite/granite-4.0-h-micro",
+      "name": "IBM: Granite 4.0 Micro",
+      "developer": "ibm-granite",
+      "family_guess": "granite",
+      "context_length": 131000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.7e-8,
+        "completion": 1.12e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0036
+    },
+    {
+      "id": "ibm-granite/granite-4.1-8b",
+      "name": "IBM: Granite 4.1 8B",
+      "developer": "ibm-granite",
+      "family_guess": "granite",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0077
+    },
+    {
+      "id": "inception/mercury-2",
+      "name": "Inception: Mercury 2",
+      "developer": "inception",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 7.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0416
+    },
+    {
+      "id": "inclusionai/ling-2.6-1t",
+      "name": "inclusionAI: Ling-2.6-1T",
+      "developer": "inclusionai",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-8,
+        "completion": 6.25e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0172
+    },
+    {
+      "id": "inclusionai/ling-2.6-flash",
+      "name": "inclusionAI: Ling-2.6-flash",
+      "developer": "inclusionai",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-8,
+        "completion": 3e-8
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0017
+    },
+    {
+      "id": "inclusionai/ring-2.6-1t",
+      "name": "inclusionAI: Ring-2.6-1T",
+      "developer": "inclusionai",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-8,
+        "completion": 6.25e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0172
+    },
+    {
+      "id": "inflection/inflection-3-pi",
+      "name": "Inflection: Inflection 3 Pi",
+      "developer": "inflection",
+      "family_guess": "other",
+      "context_length": 8000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "unavailable at provider (persistent 502/429; 0 of 1980 cells collected over 2 days)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "inflection/inflection-3-productivity",
+      "name": "Inflection: Inflection 3 Productivity",
+      "developer": "inflection",
+      "family_guess": "other",
+      "context_length": 8000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "unavailable at provider (persistent 502/429; 0 of 1980 cells collected over 2 days)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "kwaipilot/kat-coder-pro-v2",
+      "name": "Kwaipilot: KAT-Coder-Pro V2",
+      "developer": "kwaipilot",
+      "family_guess": "other",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0535
+    },
+    {
+      "id": "liquid/lfm-2-24b-a2b",
+      "name": "LiquidAI: LFM2-24B-A2B",
+      "developer": "liquid",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-8,
+        "completion": 1.2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0053
+    },
+    {
+      "id": "liquid/lfm-2.5-1.2b-instruct:free",
+      "name": "LiquidAI: LFM2.5-1.2B-Instruct (free)",
+      "developer": "liquid",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free-tier only; account-level daily cap makes collection infeasible",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "liquid/lfm-2.5-1.2b-thinking:free",
+      "name": "LiquidAI: LFM2.5-1.2B-Thinking (free)",
+      "developer": "liquid",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "mancer/weaver",
+      "name": "Mancer: Weaver (alpha)",
+      "developer": "mancer",
+      "family_guess": "other",
+      "context_length": 8000,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1099
+    },
+    {
+      "id": "meta-llama/llama-3-8b-instruct",
+      "name": "Meta: Llama 3 8B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 8192,
+      "pricing_usd_per_tok": {
+        "prompt": 1.4e-7,
+        "completion": 1.4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.02
+    },
+    {
+      "id": "meta-llama/llama-3.1-70b-instruct",
+      "name": "Meta: Llama 3.1 70B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.057
+    },
+    {
+      "id": "meta-llama/llama-3.1-8b-instruct",
+      "name": "Meta: Llama 3.1 8B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-8,
+        "completion": 3e-8
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.003
+    },
+    {
+      "id": "meta-llama/llama-3.2-11b-vision-instruct",
+      "name": "Meta: Llama 3.2 11B Vision Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 3.45e-7,
+        "completion": 3.45e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0492
+    },
+    {
+      "id": "meta-llama/llama-3.2-1b-instruct",
+      "name": "Meta: Llama 3.2 1B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2.7e-8,
+        "completion": 2.01e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0059
+    },
+    {
+      "id": "meta-llama/llama-3.2-3b-instruct",
+      "name": "Meta: Llama 3.2 3B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5.09e-8,
+        "completion": 3.35e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0106
+    },
+    {
+      "id": "meta-llama/llama-3.2-3b-instruct:free",
+      "name": "Meta: Llama 3.2 3B Instruct (free)",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "meta-llama/llama-3.3-70b-instruct",
+      "name": "Meta: Llama 3.3 70B Instruct",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 3.2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0169
+    },
+    {
+      "id": "meta-llama/llama-3.3-70b-instruct:free",
+      "name": "Meta: Llama 3.3 70B Instruct (free)",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "name": "Meta: Llama 4 Maverick",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "meta-llama/llama-4-scout",
+      "name": "Meta: Llama 4 Scout",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 10000000,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 3e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0166
+    },
+    {
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Meta: Llama Guard 4 12B",
+      "developer": "meta-llama",
+      "family_guess": "llama",
+      "context_length": 163840,
+      "pricing_usd_per_tok": {
+        "prompt": 1.8e-7,
+        "completion": 1.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "moderation/guard model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0257
+    },
+    {
+      "id": "microsoft/phi-4",
+      "name": "Microsoft: Phi 4",
+      "developer": "microsoft",
+      "family_guess": "phi",
+      "context_length": 16384,
+      "pricing_usd_per_tok": {
+        "prompt": 7e-8,
+        "completion": 1.4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0108
+    },
+    {
+      "id": "microsoft/wizardlm-2-8x22b",
+      "name": "WizardLM-2 8x22B",
+      "developer": "microsoft",
+      "family_guess": "other",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 6.2e-7,
+        "completion": 6.2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0884
+    },
+    {
+      "id": "minimax/minimax-01",
+      "name": "MiniMax: MiniMax-01",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 1000192,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 0.0000011
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0392
+    },
+    {
+      "id": "minimax/minimax-m1",
+      "name": "MiniMax: MiniMax M1",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.0000022
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0784
+    },
+    {
+      "id": "minimax/minimax-m2",
+      "name": "MiniMax: MiniMax M2",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 204800,
+      "pricing_usd_per_tok": {
+        "prompt": 2.55e-7,
+        "completion": 0.00000102
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0454
+    },
+    {
+      "id": "minimax/minimax-m2-her",
+      "name": "MiniMax: MiniMax M2-her",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0535
+    },
+    {
+      "id": "minimax/minimax-m2.1",
+      "name": "MiniMax: MiniMax M2.1",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 204800,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0535
+    },
+    {
+      "id": "minimax/minimax-m2.5",
+      "name": "MiniMax: MiniMax M2.5",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 204800,
+      "pricing_usd_per_tok": {
+        "prompt": 1.2e-7,
+        "completion": 4.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0214
+    },
+    {
+      "id": "minimax/minimax-m2.7",
+      "name": "MiniMax: MiniMax M2.7",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 204800,
+      "pricing_usd_per_tok": {
+        "prompt": 1.8e-7,
+        "completion": 7.2e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0321
+    },
+    {
+      "id": "minimax/minimax-m3",
+      "name": "MiniMax: MiniMax M3",
+      "developer": "minimax",
+      "family_guess": "minimax",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0535
+    },
+    {
+      "id": "mistralai/codestral-2508",
+      "name": "Mistral: Codestral 2508",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 9e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0499
+    },
+    {
+      "id": "mistralai/devstral-2512",
+      "name": "Mistral: Devstral 2 2512",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.076
+    },
+    {
+      "id": "mistralai/ministral-14b-2512",
+      "name": "Mistral: Ministral 3 14B 2512",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0285
+    },
+    {
+      "id": "mistralai/ministral-3b-2512",
+      "name": "Mistral: Ministral 3 3B 2512",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0143
+    },
+    {
+      "id": "mistralai/ministral-8b-2512",
+      "name": "Mistral: Ministral 3 8B 2512",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0214
+    },
+    {
+      "id": "mistralai/mistral-large",
+      "name": "Mistral Large",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000006
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3326
+    },
+    {
+      "id": "mistralai/mistral-large-2407",
+      "name": "Mistral Large 2407",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000006
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3326
+    },
+    {
+      "id": "mistralai/mistral-large-2512",
+      "name": "Mistral: Mistral Large 3 2512",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0832
+    },
+    {
+      "id": "mistralai/mistral-medium-3",
+      "name": "Mistral: Mistral Medium 3",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.076
+    },
+    {
+      "id": "mistralai/mistral-medium-3-5",
+      "name": "Mistral: Mistral Medium 3.5",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000015,
+        "completion": 0.0000075
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2851
+    },
+    {
+      "id": "mistralai/mistral-medium-3.1",
+      "name": "Mistral: Mistral Medium 3.1",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.076
+    },
+    {
+      "id": "mistralai/mistral-nemo",
+      "name": "Mistral: Mistral Nemo",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-8,
+        "completion": 3e-8
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.003
+    },
+    {
+      "id": "mistralai/mistral-saba",
+      "name": "Mistral: Saba",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0333
+    },
+    {
+      "id": "mistralai/mistral-small-24b-instruct-2501",
+      "name": "Mistral: Mistral Small 3",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 8e-8
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0075
+    },
+    {
+      "id": "mistralai/mistral-small-2603",
+      "name": "Mistral: Mistral Small 4",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "mistralai/mistral-small-3.1-24b-instruct",
+      "name": "Mistral: Mistral Small 3.1 24B",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.51e-7,
+        "completion": 5.55e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "systematic provider defect: sole provider (Cloudflare) returns HTTP 500 on all numeric-answer prompts, so 5 of 15 tasks (all number tasks) are uncollectable across every language (40/60 cells)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0525
+    },
+    {
+      "id": "mistralai/mistral-small-3.2-24b-instruct",
+      "name": "Mistral: Mistral Small 3.2 24B",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-8,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0122
+    },
+    {
+      "id": "mistralai/mixtral-8x22b-instruct",
+      "name": "Mistral: Mixtral 8x22B Instruct",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000006
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3326
+    },
+    {
+      "id": "mistralai/voxtral-small-24b-2507",
+      "name": "Mistral: Voxtral Small 24B 2507",
+      "developer": "mistralai",
+      "family_guess": "mistral",
+      "context_length": 32000,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 3e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0166
+    },
+    {
+      "id": "moonshotai/kimi-k2",
+      "name": "MoonshotAI: Kimi K2 0711",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 5.7e-7,
+        "completion": 0.0000023
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1018
+    },
+    {
+      "id": "moonshotai/kimi-k2-0905",
+      "name": "MoonshotAI: Kimi K2 0905",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1081
+    },
+    {
+      "id": "moonshotai/kimi-k2-thinking",
+      "name": "MoonshotAI: Kimi K2 Thinking",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1081
+    },
+    {
+      "id": "moonshotai/kimi-k2.5",
+      "name": "MoonshotAI: Kimi K2.5",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 3.75e-7,
+        "completion": 0.000002025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0731
+    },
+    {
+      "id": "moonshotai/kimi-k2.6",
+      "name": "MoonshotAI: Kimi K2.6",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6.6e-7,
+        "completion": 0.00000341
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1268
+    },
+    {
+      "id": "moonshotai/kimi-k2.7-code",
+      "name": "MoonshotAI: Kimi K2.7 Code",
+      "developer": "moonshotai",
+      "family_guess": "kimi",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.4e-7,
+        "completion": 0.0000035
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1383
+    },
+    {
+      "id": "morph/morph-v3-fast",
+      "name": "Morph: Morph V3 Fast",
+      "developer": "morph",
+      "family_guess": "other",
+      "context_length": 81920,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 0.0000012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1188
+    },
+    {
+      "id": "morph/morph-v3-large",
+      "name": "Morph: Morph V3 Large",
+      "developer": "morph",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 9e-7,
+        "completion": 0.0000019
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1402
+    },
+    {
+      "id": "nex-agi/nex-n2-pro",
+      "name": "Nex AGI: Nex-N2-Pro",
+      "developer": "nex-agi",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically: all providers emit a reasoning trace despite reasoning:{enabled:false} (64% of responses post_reasoning), leaving <10 clean valid samples in most cells",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0445
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-405b",
+      "name": "Nous: Hermes 3 405B Instruct",
+      "developer": "nousresearch",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1426
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+      "name": "Nous: Hermes 3 405B Instruct (free)",
+      "developer": "nousresearch",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-70b",
+      "name": "Nous: Hermes 3 70B Instruct",
+      "developer": "nousresearch",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 7e-7,
+        "completion": 7e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0998
+    },
+    {
+      "id": "nousresearch/hermes-4-405b",
+      "name": "Nous: Hermes 4 405B",
+      "developer": "nousresearch",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1663
+    },
+    {
+      "id": "nousresearch/hermes-4-70b",
+      "name": "Nous: Hermes 4 70B",
+      "developer": "nousresearch",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.3e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0217
+    },
+    {
+      "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+      "name": "NVIDIA: Llama 3.3 Nemotron Super 49B V1.5",
+      "developer": "nvidia",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.057
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b",
+      "name": "NVIDIA: Nemotron 3 Nano 30B A3B",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0089
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "name": "NVIDIA: Nemotron 3 Nano 30B A3B (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "name": "NVIDIA: Nemotron 3 Nano Omni (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free-tier only; account-level daily cap makes collection infeasible",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "name": "NVIDIA: Nemotron 3 Super",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-8,
+        "completion": 4.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0158
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b:free",
+      "name": "NVIDIA: Nemotron 3 Super (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b",
+      "name": "NVIDIA: Nemotron 3 Ultra",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.0000022
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0915
+    },
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "name": "NVIDIA: Nemotron 3 Ultra (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-3.5-content-safety:free",
+      "name": "NVIDIA: Nemotron 3.5 Content Safety (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "moderation/guard model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-nano-12b-v2-vl:free",
+      "name": "NVIDIA: Nemotron Nano 12B 2 VL (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free-tier only; account-level daily cap makes collection infeasible",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "nvidia/nemotron-nano-9b-v2:free",
+      "name": "NVIDIA: Nemotron Nano 9B V2 (free)",
+      "developer": "nvidia",
+      "family_guess": "nemotron",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free-tier only; account-level daily cap makes collection infeasible",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "openai/gpt-3.5-turbo",
+      "name": "OpenAI: GPT-3.5 Turbo",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 16385,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0832
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-0613",
+      "name": "OpenAI: GPT-3.5 Turbo (older v0613)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 4095,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1544
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-16k",
+      "name": "OpenAI: GPT-3.5 Turbo 16k",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 16385,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000004
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "inference-mode/serving variant of a model already in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4396
+    },
+    {
+      "id": "openai/gpt-3.5-turbo-instruct",
+      "name": "OpenAI: GPT-3.5 Turbo Instruct",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 4095,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000015,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2198
+    },
+    {
+      "id": "openai/gpt-4",
+      "name": "OpenAI: GPT-4",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 8191,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00003,
+        "completion": 0.00006
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 4.6332
+    },
+    {
+      "id": "openai/gpt-4-turbo",
+      "name": "OpenAI: GPT-4 Turbo",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.6632
+    },
+    {
+      "id": "openai/gpt-4-turbo-preview",
+      "name": "OpenAI: GPT-4 Turbo Preview",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.6632
+    },
+    {
+      "id": "openai/gpt-4.1",
+      "name": "OpenAI: GPT-4.1",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1047576,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "name": "OpenAI: GPT-4.1 Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1047576,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.0000016
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0713
+    },
+    {
+      "id": "openai/gpt-4.1-nano",
+      "name": "OpenAI: GPT-4.1 Nano",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1047576,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0178
+    },
+    {
+      "id": "openai/gpt-4o",
+      "name": "OpenAI: GPT-4o",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "openai/gpt-4o-2024-05-13",
+      "name": "OpenAI: GPT-4o (2024-05-13)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.8316
+    },
+    {
+      "id": "openai/gpt-4o-2024-08-06",
+      "name": "OpenAI: GPT-4o (2024-08-06)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "openai/gpt-4o-2024-11-20",
+      "name": "OpenAI: GPT-4o (2024-11-20)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "OpenAI: GPT-4o-mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "openai/gpt-4o-mini-2024-07-18",
+      "name": "OpenAI: GPT-4o-mini (2024-07-18)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "openai/gpt-4o-mini-search-preview",
+      "name": "OpenAI: GPT-4o-mini Search Preview",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "openai/gpt-4o-search-preview",
+      "name": "OpenAI: GPT-4o Search Preview",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "openai/gpt-5",
+      "name": "OpenAI: GPT-5",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5-chat",
+      "name": "OpenAI: GPT-5 Chat",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5-codex",
+      "name": "OpenAI: GPT-5 Codex",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5-image",
+      "name": "OpenAI: GPT-5 Image",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.4256
+    },
+    {
+      "id": "openai/gpt-5-image-mini",
+      "name": "OpenAI: GPT-5 Image Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3505
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "name": "OpenAI: GPT-5 Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0564
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "name": "OpenAI: GPT-5 Nano",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 5e-8,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0113
+    },
+    {
+      "id": "openai/gpt-5-pro",
+      "name": "OpenAI: GPT-5 Pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000015,
+        "completion": 0.00012
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 3.3858
+    },
+    {
+      "id": "openai/gpt-5.1",
+      "name": "OpenAI: GPT-5.1",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5.1-chat",
+      "name": "OpenAI: GPT-5.1 Chat",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5.1-codex",
+      "name": "OpenAI: GPT-5.1-Codex",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5.1-codex-max",
+      "name": "OpenAI: GPT-5.1-Codex-Max",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2822
+    },
+    {
+      "id": "openai/gpt-5.1-codex-mini",
+      "name": "OpenAI: GPT-5.1-Codex-Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0564
+    },
+    {
+      "id": "openai/gpt-5.2",
+      "name": "OpenAI: GPT-5.2",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000175,
+        "completion": 0.000014
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.395
+    },
+    {
+      "id": "openai/gpt-5.2-chat",
+      "name": "OpenAI: GPT-5.2 Chat",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000175,
+        "completion": 0.000014
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.395
+    },
+    {
+      "id": "openai/gpt-5.2-codex",
+      "name": "OpenAI: GPT-5.2-Codex",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000175,
+        "completion": 0.000014
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.395
+    },
+    {
+      "id": "openai/gpt-5.2-pro",
+      "name": "OpenAI: GPT-5.2 Pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000021,
+        "completion": 0.000168
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 4.7401
+    },
+    {
+      "id": "openai/gpt-5.3-chat",
+      "name": "OpenAI: GPT-5.3 Chat",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000175,
+        "completion": 0.000014
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.395
+    },
+    {
+      "id": "openai/gpt-5.3-codex",
+      "name": "OpenAI: GPT-5.3-Codex",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000175,
+        "completion": 0.000014
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.395
+    },
+    {
+      "id": "openai/gpt-5.4",
+      "name": "OpenAI: GPT-5.4",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1050000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5049
+    },
+    {
+      "id": "openai/gpt-5.4-image-2",
+      "name": "OpenAI: GPT-5.4 Image 2",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 272000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000008,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.2236
+    },
+    {
+      "id": "openai/gpt-5.4-mini",
+      "name": "OpenAI: GPT-5.4 Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-7,
+        "completion": 0.0000045
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1515
+    },
+    {
+      "id": "openai/gpt-5.4-nano",
+      "name": "OpenAI: GPT-5.4 Nano",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 0.00000125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.041
+    },
+    {
+      "id": "openai/gpt-5.4-pro",
+      "name": "OpenAI: GPT-5.4 Pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1050000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00003,
+        "completion": 0.00018
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 6.0588
+    },
+    {
+      "id": "openai/gpt-5.5",
+      "name": "OpenAI: GPT-5.5",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1050000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.0098
+    },
+    {
+      "id": "openai/gpt-5.5-pro",
+      "name": "OpenAI: GPT-5.5 Pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 1050000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00003,
+        "completion": 0.00018
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 6.0588
+    },
+    {
+      "id": "openai/gpt-audio",
+      "name": "OpenAI: GPT Audio",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000025,
+        "completion": 0.00001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4455
+    },
+    {
+      "id": "openai/gpt-audio-mini",
+      "name": "OpenAI: GPT Audio Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.0000024
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "embedding/audio/image/video model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1069
+    },
+    {
+      "id": "openai/gpt-chat-latest",
+      "name": "OpenAI: GPT Chat Latest",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 400000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "rolling 'latest' alias for a concrete dated model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.0098
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "OpenAI: gpt-oss-120b",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-8,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0057
+    },
+    {
+      "id": "openai/gpt-oss-120b:free",
+      "name": "OpenAI: gpt-oss-120b (free)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "OpenAI: gpt-oss-20b",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2.9e-8,
+        "completion": 1.4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0055
+    },
+    {
+      "id": "openai/gpt-oss-20b:free",
+      "name": "OpenAI: gpt-oss-20b (free)",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "name": "OpenAI: gpt-oss-safeguard-20b",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 7.5e-8,
+        "completion": 3e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "moderation/guard model",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0134
+    },
+    {
+      "id": "openai/o1",
+      "name": "OpenAI: o1",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000015,
+        "completion": 0.00006
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 2.673
+    },
+    {
+      "id": "openai/o1-pro",
+      "name": "OpenAI: o1-pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00015,
+        "completion": 0.0006
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "prohibitive pricing ($150/M in, $600/M out)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 26.73
+    },
+    {
+      "id": "openai/o3",
+      "name": "OpenAI: o3",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "openai/o3-deep-research",
+      "name": "OpenAI: o3 Deep Research",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00001,
+        "completion": 0.00004
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.782
+    },
+    {
+      "id": "openai/o3-mini",
+      "name": "OpenAI: o3 Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000011,
+        "completion": 0.0000044
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.196
+    },
+    {
+      "id": "openai/o3-mini-high",
+      "name": "OpenAI: o3 Mini High",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000011,
+        "completion": 0.0000044
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.196
+    },
+    {
+      "id": "openai/o3-pro",
+      "name": "OpenAI: o3 Pro",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00002,
+        "completion": 0.00008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 3.564
+    },
+    {
+      "id": "openai/o4-mini",
+      "name": "OpenAI: o4 Mini",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000011,
+        "completion": 0.0000044
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.196
+    },
+    {
+      "id": "openai/o4-mini-deep-research",
+      "name": "OpenAI: o4 Mini Deep Research",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "openai/o4-mini-high",
+      "name": "OpenAI: o4 Mini High",
+      "developer": "openai",
+      "family_guess": "gpt",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000011,
+        "completion": 0.0000044
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.196
+    },
+    {
+      "id": "openrouter/auto",
+      "name": "Auto Router",
+      "developer": "openrouter",
+      "family_guess": "other",
+      "context_length": 2000000,
+      "pricing_usd_per_tok": {
+        "prompt": -1,
+        "completion": -1
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "meta-router / variable pricing",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": -142560
+    },
+    {
+      "id": "openrouter/bodybuilder",
+      "name": "Body Builder (beta)",
+      "developer": "openrouter",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": -1,
+        "completion": -1
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "meta-router / variable pricing",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": -142560
+    },
+    {
+      "id": "openrouter/free",
+      "name": "Free Models Router",
+      "developer": "openrouter",
+      "family_guess": "other",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "meta-router / variable pricing",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "openrouter/fusion",
+      "name": "OpenRouter: Fusion",
+      "developer": "openrouter",
+      "family_guess": "other",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": -1,
+        "completion": -1
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "meta-router / variable pricing",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": -142560
+    },
+    {
+      "id": "openrouter/pareto-code",
+      "name": "Pareto Code Router",
+      "developer": "openrouter",
+      "family_guess": "other",
+      "context_length": 2000000,
+      "pricing_usd_per_tok": {
+        "prompt": -1,
+        "completion": -1
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": -142560
+    },
+    {
+      "id": "perceptron/perceptron-mk1",
+      "name": "Perceptron: Perceptron Mk1",
+      "developer": "perceptron",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 0.0000015
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0374
+    },
+    {
+      "id": "perplexity/sonar",
+      "name": "Perplexity: Sonar",
+      "developer": "perplexity",
+      "family_guess": "other",
+      "context_length": 127072,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1426
+    },
+    {
+      "id": "perplexity/sonar-deep-research",
+      "name": "Perplexity: Sonar Deep Research",
+      "developer": "perplexity",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "perplexity/sonar-pro",
+      "name": "Perplexity: Sonar Pro",
+      "developer": "perplexity",
+      "family_guess": "other",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5702
+    },
+    {
+      "id": "perplexity/sonar-pro-search",
+      "name": "Perplexity: Sonar Pro Search",
+      "developer": "perplexity",
+      "family_guess": "other",
+      "context_length": 200000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000015
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.5702
+    },
+    {
+      "id": "perplexity/sonar-reasoning-pro",
+      "name": "Perplexity: Sonar Reasoning Pro",
+      "developer": "perplexity",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000002,
+        "completion": 0.000008
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "search/agentic endpoint (output not a pure model prior)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.3564
+    },
+    {
+      "id": "poolside/laguna-m.1",
+      "name": "Poolside: Laguna M.1",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0309
+    },
+    {
+      "id": "poolside/laguna-m.1:free",
+      "name": "Poolside: Laguna M.1 (free)",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "name": "Poolside: Laguna XS 2.1",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 1.2e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0093
+    },
+    {
+      "id": "poolside/laguna-xs-2.1:free",
+      "name": "Poolside: Laguna XS 2.1 (free)",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "poolside/laguna-xs.2",
+      "name": "Poolside: Laguna XS.2",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0154
+    },
+    {
+      "id": "poolside/laguna-xs.2:free",
+      "name": "Poolside: Laguna XS.2 (free)",
+      "developer": "poolside",
+      "family_guess": "other",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "qwen/qwen-2.5-72b-instruct",
+      "name": "Qwen2.5 72B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 3.6e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0518
+    },
+    {
+      "id": "qwen/qwen-2.5-7b-instruct",
+      "name": "Qwen: Qwen2.5 7B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-8,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0064
+    },
+    {
+      "id": "qwen/qwen-2.5-coder-32b-instruct",
+      "name": "Qwen2.5 Coder 32B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 6.6e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0981
+    },
+    {
+      "id": "qwen/qwen-plus",
+      "name": "Qwen: Qwen-Plus",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 7.8e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0432
+    },
+    {
+      "id": "qwen/qwen-plus-2025-07-28",
+      "name": "Qwen: Qwen Plus 0728",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 7.8e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0432
+    },
+    {
+      "id": "qwen/qwen-plus-2025-07-28:thinking",
+      "name": "Qwen: Qwen Plus 0728 (thinking)",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 7.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "inference-mode/serving variant of a model already in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0432
+    },
+    {
+      "id": "qwen/qwen2.5-vl-72b-instruct",
+      "name": "Qwen: Qwen2.5 VL 72B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1164
+    },
+    {
+      "id": "qwen/qwen3-14b",
+      "name": "Qwen: Qwen3 14B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131702,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 2.4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0159
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b",
+      "name": "Qwen: Qwen3 235B A22B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4.55e-7,
+        "completion": 0.00000182
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0811
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-2507",
+      "name": "Qwen: Qwen3 235B A22B Instruct 2507",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 9e-8,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0129
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen: Qwen3 235B A22B Thinking 2507",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.495e-7,
+        "completion": 0.000001495
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0373
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b",
+      "name": "Qwen: Qwen3 30B A3B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.2e-7,
+        "completion": 5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0216
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b-instruct-2507",
+      "name": "Qwen: Qwen3 30B A3B Instruct 2507",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 4.815e-8,
+        "completion": 1.9305e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0086
+    },
+    {
+      "id": "qwen/qwen3-30b-a3b-thinking-2507",
+      "name": "Qwen: Qwen3 30B A3B Thinking 2507",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.3e-7,
+        "completion": 0.00000156
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0355
+    },
+    {
+      "id": "qwen/qwen3-32b",
+      "name": "Qwen: Qwen3 32B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8e-8,
+        "completion": 2.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0138
+    },
+    {
+      "id": "qwen/qwen3-8b",
+      "name": "Qwen: Qwen3 8B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.17e-7,
+        "completion": 4.55e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0207
+    },
+    {
+      "id": "qwen/qwen3-coder",
+      "name": "Qwen: Qwen3 Coder 480B A35B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 2.2e-7,
+        "completion": 0.0000018
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0501
+    },
+    {
+      "id": "qwen/qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen: Qwen3 Coder 30B A3B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 160000,
+      "pricing_usd_per_tok": {
+        "prompt": 7e-8,
+        "completion": 2.7e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0124
+    },
+    {
+      "id": "qwen/qwen3-coder-flash",
+      "name": "Qwen: Qwen3 Coder Flash",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.95e-7,
+        "completion": 9.75e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0371
+    },
+    {
+      "id": "qwen/qwen3-coder-next",
+      "name": "Qwen: Qwen3 Coder Next",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.1e-7,
+        "completion": 8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0239
+    },
+    {
+      "id": "qwen/qwen3-coder-plus",
+      "name": "Qwen: Qwen3 Coder Plus",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 6.5e-7,
+        "completion": 0.00000325
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1236
+    },
+    {
+      "id": "qwen/qwen3-coder:free",
+      "name": "Qwen: Qwen3 Coder 480B A35B (free)",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "qwen/qwen3-max",
+      "name": "Qwen: Qwen3 Max",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.8e-7,
+        "completion": 0.0000039
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1483
+    },
+    {
+      "id": "qwen/qwen3-max-thinking",
+      "name": "Qwen: Qwen3 Max Thinking",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 7.8e-7,
+        "completion": 0.0000039
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1483
+    },
+    {
+      "id": "qwen/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen: Qwen3 Next 80B A3B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 9e-8,
+        "completion": 0.0000011
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0248
+    },
+    {
+      "id": "qwen/qwen3-next-80b-a3b-instruct:free",
+      "name": "Qwen: Qwen3 Next 80B A3B Instruct (free)",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "qwen/qwen3-next-80b-a3b-thinking",
+      "name": "Qwen: Qwen3 Next 80B A3B Thinking",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 9.75e-8,
+        "completion": 7.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.022
+    },
+    {
+      "id": "qwen/qwen3-vl-235b-a22b-instruct",
+      "name": "Qwen: Qwen3 VL 235B A22B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 8.8e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0366
+    },
+    {
+      "id": "qwen/qwen3-vl-235b-a22b-thinking",
+      "name": "Qwen: Qwen3 VL 235B A22B Thinking",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 0.0000026
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0649
+    },
+    {
+      "id": "qwen/qwen3-vl-30b-a3b-instruct",
+      "name": "Qwen: Qwen3 VL 30B A3B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.3e-7,
+        "completion": 5.2e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0232
+    },
+    {
+      "id": "qwen/qwen3-vl-30b-a3b-thinking",
+      "name": "Qwen: Qwen3 VL 30B A3B Thinking",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.3e-7,
+        "completion": 0.00000156
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0355
+    },
+    {
+      "id": "qwen/qwen3-vl-32b-instruct",
+      "name": "Qwen: Qwen3 VL 32B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.04e-7,
+        "completion": 4.16e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0185
+    },
+    {
+      "id": "qwen/qwen3-vl-8b-instruct",
+      "name": "Qwen: Qwen3 VL 8B Instruct",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.17e-7,
+        "completion": 4.55e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0207
+    },
+    {
+      "id": "qwen/qwen3-vl-8b-thinking",
+      "name": "Qwen: Qwen3 VL 8B Thinking",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.17e-7,
+        "completion": 0.000001365
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0315
+    },
+    {
+      "id": "qwen/qwen3.5-122b-a10b",
+      "name": "Qwen: Qwen3.5-122B-A10B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 0.00000208
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0587
+    },
+    {
+      "id": "qwen/qwen3.5-27b",
+      "name": "Qwen: Qwen3.5-27B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.95e-7,
+        "completion": 0.00000156
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.044
+    },
+    {
+      "id": "qwen/qwen3.5-35b-a3b",
+      "name": "Qwen: Qwen3.5-35B-A3B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.4e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0302
+    },
+    {
+      "id": "qwen/qwen3.5-397b-a17b",
+      "name": "Qwen: Qwen3.5 397B A17B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.85e-7,
+        "completion": 0.00000245
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0794
+    },
+    {
+      "id": "qwen/qwen3.5-9b",
+      "name": "Qwen: Qwen3.5-9B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 1.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0148
+    },
+    {
+      "id": "qwen/qwen3.5-flash-02-23",
+      "name": "Qwen: Qwen3.5-Flash",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 6.5e-8,
+        "completion": 2.6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0116
+    },
+    {
+      "id": "qwen/qwen3.5-plus-02-15",
+      "name": "Qwen: Qwen3.5 Plus 2026-02-15",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 2.6e-7,
+        "completion": 0.00000156
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0525
+    },
+    {
+      "id": "qwen/qwen3.5-plus-20260420",
+      "name": "Qwen: Qwen3.5 Plus 2026-04-20",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 0.0000018
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0606
+    },
+    {
+      "id": "qwen/qwen3.6-27b",
+      "name": "Qwen: Qwen3.6 27B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 2.85e-7,
+        "completion": 0.0000024
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0658
+    },
+    {
+      "id": "qwen/qwen3.6-35b-a3b",
+      "name": "Qwen: Qwen3.6 35B A3B",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.4e-7,
+        "completion": 0.000001
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0302
+    },
+    {
+      "id": "qwen/qwen3.6-flash",
+      "name": "Qwen: Qwen3.6 Flash",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.875e-7,
+        "completion": 0.000001125
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0379
+    },
+    {
+      "id": "qwen/qwen3.6-max-preview",
+      "name": "Qwen: Qwen3.6 Max Preview",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000104,
+        "completion": 0.00000624
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.21
+    },
+    {
+      "id": "qwen/qwen3.6-plus",
+      "name": "Qwen: Qwen3.6 Plus",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.25e-7,
+        "completion": 0.00000195
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0656
+    },
+    {
+      "id": "qwen/qwen3.7-max",
+      "name": "Qwen: Qwen3.7 Max",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.00000375
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2079
+    },
+    {
+      "id": "qwen/qwen3.7-plus",
+      "name": "Qwen: Qwen3.7 Plus",
+      "developer": "qwen",
+      "family_guess": "qwen",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 3.2e-7,
+        "completion": 0.00000128
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.057
+    },
+    {
+      "id": "rekaai/reka-edge",
+      "name": "Reka Edge",
+      "developer": "rekaai",
+      "family_guess": "other",
+      "context_length": 16384,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 1e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0143
+    },
+    {
+      "id": "rekaai/reka-flash-3",
+      "name": "Reka Flash 3",
+      "developer": "rekaai",
+      "family_guess": "other",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 2e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0154
+    },
+    {
+      "id": "relace/relace-apply-3",
+      "name": "Relace: Relace Apply 3",
+      "developer": "relace",
+      "family_guess": "other",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 8.5e-7,
+        "completion": 0.00000125
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1259
+    },
+    {
+      "id": "relace/relace-search",
+      "name": "Relace: Relace Search",
+      "developer": "relace",
+      "family_guess": "other",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1663
+    },
+    {
+      "id": "sakana/fugu-ultra",
+      "name": "Sakana: Fugu Ultra",
+      "developer": "sakana",
+      "family_guess": "other",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000005,
+        "completion": 0.00003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 1.0098
+    },
+    {
+      "id": "sao10k/l3-lunaris-8b",
+      "name": "Sao10K: Llama 3 8B Lunaris",
+      "developer": "sao10k",
+      "family_guess": "llama",
+      "context_length": 8192,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-8,
+        "completion": 5e-8
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0058
+    },
+    {
+      "id": "sao10k/l3.1-70b-hanami-x1",
+      "name": "Sao10K: Llama 3.1 70B Hanami x1",
+      "developer": "sao10k",
+      "family_guess": "llama",
+      "context_length": 16000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000003,
+        "completion": 0.000003
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.4277
+    },
+    {
+      "id": "sao10k/l3.1-euryale-70b",
+      "name": "Sao10K: Llama 3.1 Euryale 70B v2.2",
+      "developer": "sao10k",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8.5e-7,
+        "completion": 8.5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1212
+    },
+    {
+      "id": "sao10k/l3.3-euryale-70b",
+      "name": "Sao10K: Llama 3.3 Euryale 70B",
+      "developer": "sao10k",
+      "family_guess": "llama",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 6.5e-7,
+        "completion": 7.5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0939
+    },
+    {
+      "id": "stepfun/step-3.5-flash",
+      "name": "StepFun: Step 3.5 Flash",
+      "developer": "stepfun",
+      "family_guess": "stepfun",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1e-7,
+        "completion": 3e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0166
+    },
+    {
+      "id": "stepfun/step-3.7-flash",
+      "name": "StepFun: Step 3.7 Flash",
+      "developer": "stepfun",
+      "family_guess": "stepfun",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 2e-7,
+        "completion": 0.00000115
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0398
+    },
+    {
+      "id": "switchpoint/router",
+      "name": "Switchpoint Router",
+      "developer": "switchpoint",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 8.5e-7,
+        "completion": 0.0000034
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "meta-router / variable pricing",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1515
+    },
+    {
+      "id": "tencent/hunyuan-a13b-instruct",
+      "name": "Tencent: Hunyuan A13B Instruct",
+      "developer": "tencent",
+      "family_guess": "hunyuan",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.4e-7,
+        "completion": 5.7e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0251
+    },
+    {
+      "id": "tencent/hy3",
+      "name": "Tencent: Hy3",
+      "developer": "tencent",
+      "family_guess": "hunyuan",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 1.4e-7,
+        "completion": 5.8e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0252
+    },
+    {
+      "id": "tencent/hy3-preview",
+      "name": "Tencent: Hy3 preview",
+      "developer": "tencent",
+      "family_guess": "hunyuan",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 6.3e-8,
+        "completion": 2.1e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "deprecated/preview naming",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0107
+    },
+    {
+      "id": "tencent/hy3:free",
+      "name": "Tencent: Hy3 (free)",
+      "developer": "tencent",
+      "family_guess": "hunyuan",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "is_free_tier": true,
+      "included": false,
+      "exclusion_reason": "free endpoint duplicate of a paid model in the catalog",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0
+    },
+    {
+      "id": "thedrummer/cydonia-24b-v4.1",
+      "name": "TheDrummer: Cydonia 24B V4.1",
+      "developer": "thedrummer",
+      "family_guess": "other",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0451
+    },
+    {
+      "id": "thedrummer/rocinante-12b",
+      "name": "TheDrummer: Rocinante 12B",
+      "developer": "thedrummer",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 2.5e-7,
+        "completion": 5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0386
+    },
+    {
+      "id": "thedrummer/skyfall-36b-v2",
+      "name": "TheDrummer: Skyfall 36B V2",
+      "developer": "thedrummer",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 5.5e-7,
+        "completion": 8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0814
+    },
+    {
+      "id": "thedrummer/unslopnemo-12b",
+      "name": "TheDrummer: UnslopNemo 12B",
+      "developer": "thedrummer",
+      "family_guess": "other",
+      "context_length": 32768,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.057
+    },
+    {
+      "id": "undi95/remm-slerp-l2-13b",
+      "name": "ReMM SLERP 13B",
+      "developer": "undi95",
+      "family_guess": "other",
+      "context_length": 6144,
+      "pricing_usd_per_tok": {
+        "prompt": 4.5e-7,
+        "completion": 6.5e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0665
+    },
+    {
+      "id": "upstage/solar-pro-3",
+      "name": "Upstage: Solar Pro 3",
+      "developer": "upstage",
+      "family_guess": "other",
+      "context_length": 128000,
+      "pricing_usd_per_tok": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0267
+    },
+    {
+      "id": "writer/palmyra-x5",
+      "name": "Writer: Palmyra X5",
+      "developer": "writer",
+      "family_guess": "gemini",
+      "context_length": 1040000,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.000006
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1497
+    },
+    {
+      "id": "x-ai/grok-4.20",
+      "name": "xAI: Grok 4.20",
+      "developer": "x-ai",
+      "family_guess": "grok",
+      "context_length": 2000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1931
+    },
+    {
+      "id": "x-ai/grok-4.20-multi-agent",
+      "name": "xAI: Grok 4.20 Multi-Agent",
+      "developer": "x-ai",
+      "family_guess": "grok",
+      "context_length": 2000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "mandatory reasoning (single-pass one-token completion undefined)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1931
+    },
+    {
+      "id": "x-ai/grok-4.3",
+      "name": "xAI: Grok 4.3",
+      "developer": "x-ai",
+      "family_guess": "grok",
+      "context_length": 1000000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.00000125,
+        "completion": 0.0000025
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1931
+    },
+    {
+      "id": "x-ai/grok-build-0.1",
+      "name": "xAI: Grok Build 0.1",
+      "developer": "x-ai",
+      "family_guess": "grok",
+      "context_length": 256000,
+      "pricing_usd_per_tok": {
+        "prompt": 0.000001,
+        "completion": 0.000002
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "specialized (code/math/medical/roleplay)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1544
+    },
+    {
+      "id": "xiaomi/mimo-v2.5",
+      "name": "Xiaomi: MiMo-V2.5",
+      "developer": "xiaomi",
+      "family_guess": "other",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 1.05e-7,
+        "completion": 2.8e-7
+      },
+      "is_free_tier": false,
+      "included": false,
+      "exclusion_reason": "hidden/de-facto reasoning verified empirically (no direct single-pass completion within budget)",
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.017
+    },
+    {
+      "id": "xiaomi/mimo-v2.5-pro",
+      "name": "Xiaomi: MiMo-V2.5-Pro",
+      "developer": "xiaomi",
+      "family_guess": "other",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 4.35e-7,
+        "completion": 8.7e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0672
+    },
+    {
+      "id": "z-ai/glm-4.5",
+      "name": "Z.ai: GLM 4.5",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.0000022
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1045
+    },
+    {
+      "id": "z-ai/glm-4.5-air",
+      "name": "Z.ai: GLM 4.5 Air",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 1.3e-7,
+        "completion": 8.5e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0271
+    },
+    {
+      "id": "z-ai/glm-4.5v",
+      "name": "Z.ai: GLM 4.5V",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 65536,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.0000018
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0998
+    },
+    {
+      "id": "z-ai/glm-4.6",
+      "name": "Z.ai: GLM 4.6",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 4.3e-7,
+        "completion": 0.00000174
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0769
+    },
+    {
+      "id": "z-ai/glm-4.6v",
+      "name": "Z.ai: GLM 4.6V",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 131072,
+      "pricing_usd_per_tok": {
+        "prompt": 3e-7,
+        "completion": 9e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0499
+    },
+    {
+      "id": "z-ai/glm-4.7",
+      "name": "Z.ai: GLM 4.7",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 4e-7,
+        "completion": 0.00000175
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0731
+    },
+    {
+      "id": "z-ai/glm-4.7-flash",
+      "name": "Z.ai: GLM 4.7 Flash",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-8,
+        "completion": 4e-7
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.0126
+    },
+    {
+      "id": "z-ai/glm-5",
+      "name": "Z.ai: GLM 5",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 6e-7,
+        "completion": 0.00000192
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1012
+    },
+    {
+      "id": "z-ai/glm-5-turbo",
+      "name": "Z.ai: GLM 5 Turbo",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 262144,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000012,
+        "completion": 0.000004
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2043
+    },
+    {
+      "id": "z-ai/glm-5.1",
+      "name": "Z.ai: GLM 5.1",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 9.66e-7,
+        "completion": 0.000003036
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1623
+    },
+    {
+      "id": "z-ai/glm-5.2",
+      "name": "Z.ai: GLM 5.2",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 1048576,
+      "pricing_usd_per_tok": {
+        "prompt": 9.086e-7,
+        "completion": 0.0000028556
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.1527
+    },
+    {
+      "id": "z-ai/glm-5v-turbo",
+      "name": "Z.ai: GLM 5V Turbo",
+      "developer": "z-ai",
+      "family_guess": "glm",
+      "context_length": 202752,
+      "pricing_usd_per_tok": {
+        "prompt": 0.0000012,
+        "completion": 0.000004
+      },
+      "is_free_tier": false,
+      "included": true,
+      "exclusion_reason": null,
+      "est_requests_main": 1980,
+      "est_cost_usd_main": 0.2043
+    }
+  ]
+}

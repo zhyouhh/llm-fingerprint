@@ -12,8 +12,8 @@
     "llmfp": "src/cli.js"
   },
   "scripts": {
-    "test": "node --test test/",
-    "test:golden": "node --test test/golden/",
+    "test": "node --max-old-space-size=8192 --test \"test/**/*.test.js\"",
+    "test:golden": "node --max-old-space-size=8192 --test \"test/golden/*.test.js\"",
     "fetch-data": "node scripts/fetch-upstream-data.js",
     "build-refdb": "node scripts/build-refdb.js"
   }

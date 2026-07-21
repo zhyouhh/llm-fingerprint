@@ -1,0 +1,175 @@
+// Step 1: merge raw runs and normalize answers into analysis-ready records.
+//
+// Input : data/runs/*/responses.jsonl        (all runs, or --runs id1,id2)
+// Output: data/derived/normalized.jsonl      (one record per unique cell-rep)
+//         data/derived/normalization-report.json (validity taxonomy + unmapped colors)
+//
+// Every answer gets: normalized (string|int|null), answer_class
+// (valid|invalid|refusal|empty), and for color tasks color_canon.
+// NOTHING is dropped: invalid/refusal records stay, flagged. Analyses filter
+// on answer_class explicitly, so every exclusion is visible and countable.
+//
+// Usage: npm run stats:normalize            (all runs)
+//        node stats/01-normalize.js --runs pilot-01,main-01
+import { writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { ROOT, readJson, readJsonl, parseArgs, nowUtc } from '../run/lib.js';
+
+const args = parseArgs(process.argv);
+const prompts = readJson(path.join(ROOT, 'config', 'prompts.json'));
+const colorLex = readJson(path.join(ROOT, 'stats', 'color-lexicon.json'));
+const taskById = Object.fromEntries(prompts.tasks.map((t) => [t.id, t]));
+
+const runsDir = path.join(ROOT, 'data', 'runs');
+const allRunIds = args.runs ? args.runs.split(',') : (existsSync(runsDir) ? readdirSync(runsDir) : []);
+// Runs whose manifest notes start with "ABANDONED" are kept on disk (append-only)
+// but never enter analysis unless explicitly requested via --runs.
+const runIds = allRunIds.filter((id) => {
+  if (args.runs) return true;
+  const mp = path.join(runsDir, id, 'manifest.json');
+  const abandoned = existsSync(mp) && /^ABANDONED/.test(readJson(mp).notes ?? '');
+  if (abandoned) console.log(`Skipping run ${id}: manifest marked ABANDONED.`);
+  return !abandoned;
+});
+if (!runIds.length) { console.error('No runs found in data/runs/.'); process.exit(1); }
+
+// ---------------------------------------------------------------- normalizers
+const AR_DIGITS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9', '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4', '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9' };
+const ZH_DIGITS = { '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+
+// Chinese numerals 1-99 (e.g. 七=7, 十=10, 十七=17, 四十二=42).
+function zhNumber(s) {
+  const m = s.match(/^([零一二两三四五六七八九])?十?([零一二两三四五六七八九])?$/);
+  if (!m || (!m[1] && !m[2] && !s.includes('十'))) return null;
+  if (!s.includes('十')) return m[1] ? ZH_DIGITS[m[1]] : null;
+  return (m[1] ? ZH_DIGITS[m[1]] : 1) * 10 + (m[2] ? ZH_DIGITS[m[2]] : 0);
+}
+
+// Strip wrapping quotes/brackets/punctuation, collapse whitespace, NFC.
+function basicClean(raw) {
+  return raw.normalize('NFC')
+    .replace(/[«»"“”„'’‘`().,!?。！？、：:;؛؟\[\]{}*_#-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const REFUSAL_RE = /(i can.?t|i cannot|i'm sorry|as an ai|не могу|извин|抱歉|无法|لا أستطيع|عذراً|آسف)/i;
+
+// Language-specific binary pairs for coin-flip → canonical h/t.
+const COIN = {
+  en: { heads: 'h', tails: 't' },
+  ru: { 'орёл': 'h', 'орел': 'h', 'решка': 't' },
+  zh: { '正面': 'h', '正': 'h', '反面': 't', '反': 't' },
+  ar: { 'صورة': 'h', 'كتابة': 't' },
+};
+
+function normalize(rec) {
+  const task = taskById[rec.task_id];
+  const out = { normalized: null, answer_class: 'invalid', color_canon: null };
+  if (!task) return out;
+  if (rec.raw == null || !rec.raw.trim()) return { ...out, answer_class: 'empty' };
+  if (REFUSAL_RE.test(rec.raw)) return { ...out, answer_class: 'refusal' };
+
+  let s = basicClean(rec.raw);
+  if (!s) return { ...out, answer_class: 'empty' };
+  s = s.replace(/[٠-٩۰-۹]/g, (d) => AR_DIGITS[d]); // Arabic-Indic → Latin digits
+
+  if (task.normalize_as === 'integer') {
+    let n = null;
+    const m = s.match(/-?\d+/);
+    if (m) n = parseInt(m[0], 10);
+    else if (rec.lang === 'zh') n = zhNumber(s);
+    if (n == null) return out;
+    const range = task.answer_space.match(/(\d+)-(\d+)/);
+    const inRange = !range || (n >= +range[1] && n <= +range[2]);
+    return { ...out, normalized: String(n), answer_class: inRange ? 'valid' : 'invalid' };
+  }
+
+  if (task.normalize_as === 'binary') {
+    const w = s.toLowerCase().split(' ')[0];
+    const c = COIN[rec.lang]?.[w];
+    return c ? { ...out, normalized: c, answer_class: 'valid' } : out;
+  }
+
+  // word / grapheme: first whitespace-token, lowercased (no-op for zh/ar scripts)
+  const words = s.toLowerCase().split(' ');
+  if (task.normalize_as === 'word' && words.length > 3) return out; // whole sentence ⇒ off-format
+  const w = words[0];
+  if (!w) return { ...out, answer_class: 'empty' };
+  if (task.normalize_as === 'grapheme' && [...w].length > 1 && rec.lang !== 'zh') {
+    // "letter A" style answers: take the single-char token if any
+    const single = words.find((x) => [...x].length === 1);
+    if (!single) return out;
+    return { ...out, normalized: single, answer_class: 'valid' };
+  }
+  const res = { ...out, normalized: w, answer_class: 'valid' };
+  if (task.category === 'color') res.color_canon = colorLex.map[rec.lang]?.[w] ?? null;
+  return res;
+}
+
+// ---------------------------------------------------------------- main
+const outPath = path.join(ROOT, 'data', 'derived', 'normalized.jsonl');
+mkdirSync(path.dirname(outPath), { recursive: true });
+
+const lines = [];
+const classCounts = {}; // model|task -> {valid, invalid, refusal, empty}
+const unmappedColors = {};
+
+// Pre-pass — reasoning combo screen. Some upstream providers emit a hidden reasoning
+// trace despite reasoning:{enabled:false}; such responses are not direct single-pass
+// samples and must not enter fingerprints. run/lib.js records reasoning_len, but
+// records collected before that field existed lack it. So we first derive, from the
+// records that DO carry the field, which (model, provider) pairs emit traces, then
+// apply that verdict to the older field-less records from the same pairs. Fully
+// data-derived and reproducible.
+const pairSeen = {}; // model@provider -> { n, rsn }
+for (const runId of runIds) {
+  for (const rec of readJsonl(path.join(runsDir, runId, 'responses.jsonl'))) {
+    if (rec.error || !('reasoning_len' in rec)) continue;
+    const s = (pairSeen[`${rec.model}@${rec.provider}`] ??= { n: 0, rsn: 0 });
+    s.n++; if (rec.reasoning_len > 0) s.rsn++;
+  }
+}
+const reasoningPair = new Set(
+  Object.entries(pairSeen).filter(([, s]) => s.n >= 20 && s.rsn / s.n >= 0.3).map(([k]) => k)
+);
+
+const seen = new Set();
+for (const runId of runIds) {
+  const p = path.join(runsDir, runId, 'responses.jsonl');
+  for (const rec of readJsonl(p)) {
+    if (rec.error || seen.has(rec.key)) continue;
+    seen.add(rec.key);
+    const n = normalize(rec);
+    // A reasoning trace (recorded directly, or inferred for field-less records via a
+    // reasoning-emitting model@provider pair) → not a direct single-pass sample.
+    const emittedTrace = (rec.reasoning_len ?? 0) > 0
+      || (!('reasoning_len' in rec) && reasoningPair.has(`${rec.model}@${rec.provider}`));
+    if (emittedTrace) n.answer_class = 'post_reasoning';
+    const k = `${rec.model}|${rec.task_id}|${rec.lang}`;
+    (classCounts[k] ??= { valid: 0, invalid: 0, refusal: 0, empty: 0, post_reasoning: 0 })[n.answer_class]++;
+    if (taskById[rec.task_id]?.category === 'color' && n.answer_class === 'valid' && !n.color_canon) {
+      const uk = `${rec.lang}:${n.normalized}`;
+      unmappedColors[uk] = (unmappedColors[uk] ?? 0) + 1;
+    }
+    lines.push(JSON.stringify({
+      key: rec.key, run_id: rec.run_id, model: rec.model, provider: rec.provider,
+      task_id: rec.task_id, lang: rec.lang, temperature: rec.temperature, rep: rec.rep,
+      request_utc: rec.request_utc, raw: rec.raw, ...n,
+    }));
+  }
+}
+
+writeFileSync(outPath, lines.join('\n') + '\n');
+writeFileSync(path.join(ROOT, 'data', 'derived', 'normalization-report.json'), JSON.stringify({
+  generated_utc: nowUtc(), runs: runIds, records: lines.length,
+  class_counts_by_model_task_lang: classCounts,
+  unmapped_color_answers: Object.fromEntries(Object.entries(unmappedColors).sort((a, b) => b[1] - a[1])),
+  note: 'Map frequent unmapped colors in stats/color-lexicon.json and re-run this step.',
+}, null, 2));
+
+const total = lines.length;
+const valid = Object.values(classCounts).reduce((s, c) => s + c.valid, 0);
+console.log(`Normalized ${total} records from ${runIds.length} run(s): ${valid} valid (${((100 * valid) / total).toFixed(1)}%).`);
+console.log(`Unmapped color answers: ${Object.keys(unmappedColors).length} distinct (see normalization-report.json).`);
+console.log('Next: npm run stats:distributions');
