@@ -195,23 +195,33 @@ CLI 侧的配置键是 `model_reasoning_effort`（不是 `reasoning_effort`）�
 
 打 `/v1/chat/completions` 传 `reasoning_effort` **两个端点都无反应**——那是协议错了，不是不支持。
 
-**2026-07-22 用正确协议实测**（硬题：3红5蓝7绿球，保证 3 同色的最少抽取数 = 7，n=6/档）：
+**两个端点都透传 effort。** 自建网关有日志级铁证（`debug: true` 时 `apply.go` 会打印）：
 
-| 端点 | effort=low | effort=high | 是否透传 |
-|---|---|---|---|
-| 自建 cliproxyapi | **6/6 正确** | 6/6 正确 | ❌ 不透传，跑固定档 |
-| relay-A | **3/6 正确**（答 7,8,9,8,7,7） | **6/6 正确** | ✅ 透传到后端 |
+```
+[apply.go:232] thinking: original config from request | provider=codex model=gpt-5.6-sol mode=level level=low
+[apply.go:273] thinking: processed config to apply  | provider=codex model=gpt-5.6-sol mode=level level=low
+```
 
-**这加强了 relay-A sol 的正版判定**：永久降档的假货在 high 档也该拉胯；relay-A 在 high 上与正版
-参照同为 6/6，只有主动要 low 才退化——正是诚实透传的正版模型该有的行为。用户 config 里
+| 端点 | 证据 | 透传 |
+|---|---|---|
+| 自建 cliproxyapi | 日志 `apply.go` 原样应用 level；**难题下 output_tokens：low 1127–2381 / high 4755–5082（2–3 倍）** | ✅ |
+| relay-A | 难题正确率 low 3/6 vs high 6/6 | ✅ |
+
+⚠️ **探针题必须够难，否则会得出反向结论。** 我们先用了「3红5蓝7绿球保证3同色」（答案 7），
+两端在 low 档都 6/6，且 `reasoning_tokens` 恒 0 —— 据此曾错误结论「不透传、字段不可用」。
+换成 hvoy 那道自适应糖果题后，同一端点立刻显出 2–3 倍的 token 差和 5075 的 reasoning_tokens。
+
+**`reasoning_tokens` 的正确读法**：简单题不触发推理时确实为 0，这是真实行为不是上报缺失；
+难题下自建网关报得很准（5075）。relay-A 在**相同请求**间会出现 null/数值跳变，与其
+「~70% 未注入 / ~30% 注入」的路由分裂一致——**跨端点比该字段无意义，同端点内可用**。
+
+**对 relay-A sol 正版判定的加强**：永久降档的假货在 high 档也该拉胯；relay-A 在 high 上与正版
+参照表现一致，只有主动要 low 才退化——正是诚实透传的正版模型该有的行为。用户 config 里
 `model_reasoning_effort = "high"`，实际使用走的就是这一档。
 
-**`reasoning_tokens` 不可用作 effort 指标**：同一请求两次调用报 0 / 34 / 41 / 48 / null 都出现过。
-所以早前记录的「sol 两端痕迹率 24.6% vs 64.2%」**不构成降档证据**，已作废。
-
-**推论**：effort 只能**行为测**——一道有唯一可验证答案的硬题，看**正确率**。这把第 1 层从
-"可选优化"变成"必需"，同时给出一个新的廉价探针：**「端点透不透传 effort」本身就是端点特征**，
-2 次请求即可测（low/high 各一，看硬题是否退化）。
+**留作第 1 层的探针**：「端点透不透传 effort」是廉价端点特征（low/high 各若干次，看难题
+正确率或 output_tokens 是否分层）。**题目难度需先校准**——用正版参照端点确认它在 low 档
+确实会退化，才能拿去测别人。
 
 ### 端点行为特征（画像层的实测样本）
 
