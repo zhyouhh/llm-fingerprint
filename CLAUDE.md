@@ -187,16 +187,31 @@ golden test 保证，比文字 review 硬。
 不同模型，非改名马甲；两边 sol 对论文库都呈「平铺、最近邻 gpt-5.5≈0.34」，即"谁都不像"，
 正是库中缺失的真·新模型该有的形状（若拿 5.5 冒充会紧贴 gpt-5.5）。
 
-**未排除 reasoning 档位**——但**不能从 `reasoning_tokens` 推断**。2026-07-22 实测：
+### reasoning effort：协议选错会得出反向结论
 
-- 两个端点都**不认 `reasoning_effort` 参数**：`low` 与 `high` 的 `reasoning_tokens` 无差别
-  （own 恒 0；relay-A 在 46–50 之间波动，与 effort 无关）
-- **`reasoning_tokens` 字段本身不稳定**：对完全相同的请求，relay-A 报 50 / null / 46 / 39 / 37 都出现过；
-  own 传了 effort 报 `0`、不传报 `null`
+**必须用对协议。** Codex 系中转走 **Responses API**（用户 `~/.codex/config.toml` 里
+`wire_api = "responses"`），effort 放在 **`POST /v1/responses` 的 `reasoning: {effort}`**。
+CLI 侧的配置键是 `model_reasoning_effort`（不是 `reasoning_effort`）。
 
-所以 sol 两端 24.6% vs 64.2% 的痕迹率差距**很可能只是 usage 上报口径不同**，不构成降档证据。
-**推论：effort 只能用行为测——一道有唯一可验证答案的硬推理题，看正确率。** 这条把第 1 层
-从"可选优化"变成了"必需"：指纹层和 usage 元数据都覆盖不了 effort。
+打 `/v1/chat/completions` 传 `reasoning_effort` **两个端点都无反应**——那是协议错了，不是不支持。
+
+**2026-07-22 用正确协议实测**（硬题：3红5蓝7绿球，保证 3 同色的最少抽取数 = 7，n=6/档）：
+
+| 端点 | effort=low | effort=high | 是否透传 |
+|---|---|---|---|
+| 自建 cliproxyapi | **6/6 正确** | 6/6 正确 | ❌ 不透传，跑固定档 |
+| relay-A | **3/6 正确**（答 7,8,9,8,7,7） | **6/6 正确** | ✅ 透传到后端 |
+
+**这加强了 relay-A sol 的正版判定**：永久降档的假货在 high 档也该拉胯；relay-A 在 high 上与正版
+参照同为 6/6，只有主动要 low 才退化——正是诚实透传的正版模型该有的行为。用户 config 里
+`model_reasoning_effort = "high"`，实际使用走的就是这一档。
+
+**`reasoning_tokens` 不可用作 effort 指标**：同一请求两次调用报 0 / 34 / 41 / 48 / null 都出现过。
+所以早前记录的「sol 两端痕迹率 24.6% vs 64.2%」**不构成降档证据**，已作废。
+
+**推论**：effort 只能**行为测**——一道有唯一可验证答案的硬题，看**正确率**。这把第 1 层从
+"可选优化"变成"必需"，同时给出一个新的廉价探针：**「端点透不透传 effort」本身就是端点特征**，
+2 次请求即可测（low/high 各一，看硬题是否退化）。
 
 ### 端点行为特征（画像层的实测样本）
 
