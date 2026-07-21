@@ -32,15 +32,55 @@ Language Models from Single-Token Output Distributions*（arXiv:2607.10252）。
 - **距离** = Jensen-Shannon 散度（**底数 2**，值域 [0,1]），对双方 `n_valid ≥ 10` 的格取均值
 - **判定阈值** = 论文 EER 曲线：k=8 → 0.106，k=16 → 0.095，k=40 → 0.0728
 
-## 三种工作模式
+## 核心方法：对照校准法（本项目的主要贡献）
 
-| 模式 | 说明 | 要可信基线 |
+**问题**：不同网关把请求包进不同外壳（注入的系统提示词长度不同、参数透传程度不同），
+所以跨端点直接比指纹，差异里混着「外壳不同」和「模型不同」，**分不开**。论文没遇到这个问题，
+因为它只在 OpenRouter 单一环境采集。
+
+**解法**：**把外壳的影响测出来再扣掉。** 选一个**双方都提供、且已独立确认为正版**的
+**对照模型**，它的跨端点距离就是纯外壳效应。
+
+| 量 | 定义 | 含义 |
 |---|---|---|
-| **漂移监控**（主线） | 给端点建基线，之后定期复检；漂出 genuine 区间 = 供应商动过手脚 | 否 |
-| **交叉比对** | 多家中转号称同一模型，两两比；离群者可疑 | 否 |
-| **论文库比对** | 跟 176 个已知指纹比，报"最像谁" | 否，但库会随模型更新过期 |
+| **H** | 对照模型在 参照端点 vs 待测端点 的平均 JSD | 纯外壳差异（模型确定相同） |
+| **S** | 待验模型在 参照端点 vs 待测端点 的平均 JSD | 待判定 |
+| **D** | 待测端点上 待验模型 vs 对照模型 的平均 JSD | 真实模型差异的尺度 |
 
-参考库是 **2026-07-06 快照**，越久越不准。自建基线是主线，论文库是可选参照。
+**判据**（看相对关系，不看绝对值）：
+
+- `S ≤ 1.5 × H` → **与同一模型一致**（外壳足以解释全部差异）
+- `S ≥ 0.7 × D` → **疑似替换**
+- 之间 → 不确定，加格子或加采样
+
+## 四层协议
+
+| 层 | 内容 | 成本 | 能判定 | 要参照 |
+|---|---|---|---|---|
+| **0 端点画像** | 注入量、temperature/seed/logprobs/n 支持、reasoning_tokens、model 回显、特征响应头 | ~10 次 | 端点类型；**谎称"官方 API 直连"当场戳穿** | 否 |
+| **1 动态内容题** | 知识截止题 + 硬推理题（**程序化生成**） | ~6 次 | 粗暴替换、**reasoning 降档** | 否 |
+| **2 校准指纹** | H / S / D（上面那套） | 240 次/模型 | **模型身份** | 是 |
+| **3 漂移监控** | 定期重跑第 1 层 | ~6 次/周 | 跑熟后偷偷降配 | 否 |
+
+日常只跑 0+1；换供应商或起疑时才上第 2 层。
+
+## 已知无法覆盖
+
+- **reasoning effort 降档**：答案分布看不出「同一模型跑在低推理档」。第 2 层的 verdict
+  **不包含**这一项，只单独报 `reasoning_len` 比率当参考。要抓得靠第 1 层的硬推理题正确率。
+- **蓄意伪造**：对手知道我们查什么就能对着调。第 2 层比"背固定答案"难得多（要匹配
+  8-40 格 × 多语言的完整分布），但不是不可能。
+- **不能证明是厂商原始权重**：那需要厂商对响应做密码学签名，业界尚无。
+
+## 参考库与自建参照
+
+| 来源 | 内容 | 何时用 | 保质期 |
+|---|---|---|---|
+| `data/upstream/` 论文库 | 176 模型 × 40 格，2026-07-06 快照 | 待验模型在库里时可直接排名 | 随模型更新过期 |
+| `reference/genuine-*.json` | **本项目自采的正版参照** | 库里没有的新模型（如 gpt-5.6-sol） | 见下 |
+
+`reference/` 是**一次性投入、可反复使用**的资产：以后测任何新中转，只花新中转的额度，
+参照直接读本地。**模型版本更新后需重采**（厂商换了权重，旧参照就不代表正版了）。
 
 ## 硬约束
 
@@ -60,11 +100,26 @@ Node.js ≥ 20（实测 22.14）。**零运行时依赖**，跟上游一致。�
 npm test                 # 全部测试
 npm run test:golden      # 只跑 golden test（复现论文数字，最重要）
 npm run fetch-data       # 从 Zenodo 拉论文数据集+代码到 data/upstream/（gitignored，~52MB）
-npm run build-refdb      # 从论文数据集抽出 176×40 参考指纹 → refdb/fingerprints.json
 
-npx llmfp check --endpoint <url> --model <name> [--quick|--full]
-npx llmfp enroll --endpoint <url> --model <name>    # 建自己的基线
-npx llmfp ui                                        # 本地 web 界面
+# 【主用途】验一个新中转，只花新中转的额度，正版参照读本地 reference/
+node scripts/verify-relay.js --endpoint https://xxx/v1 --key sk-xxx \
+  [--subject gpt-5.6-sol] [--control gpt-5.4] [--reps 30]
+
+# 单端点采样 + 对论文 176 模型库排名（待验模型需在库里）
+node scripts/probe-endpoint.js --endpoint <url> --key <k> --model <m> [--reps 30] [--full]
+
+# 同端点内多模型互比（检测"多个名字同一后端"）
+node scripts/compare-baselines.js baselines/a.json baselines/b.json ...
+
+# 手工指定四个文件做校准比对
+node scripts/calibrated-compare.js --control-a A --control-b B --subject-a C --subject-b D
+```
+
+**采集新的正版参照**（换了模型版本、或新增待验模型时）：
+
+```bash
+node scripts/probe-endpoint.js --endpoint <已知正版端点> --key <k> --model gpt-5.6-sol
+# 然后把 baselines/probe-<model>.json 脱敏（删 endpoint 字段）存进 reference/genuine-<model>.json
 ```
 
 ## Golden Test（本项目的正确性基石）
@@ -117,9 +172,63 @@ test/golden/     G0-G2
 codex-server MCP）。本项目按 task commit 后审，不在 spec 阶段审 —— 统计正确性由
 golden test 保证，比文字 review 硬。
 
+## 实测结论存档（2026-07-21/22）
+
+### 已验证的端点
+
+| 端点 | 模型 | 结论 | 证据 |
+|---|---|---|---|
+| **relay-A** | `gpt-5.4` | ✅ **正版** | 对论文库 **rank 1/165, JSD 0.0605**，低于同模型中位数 0.075，到第 2 名差 4 倍 |
+| **relay-A** | `gpt-5.6-sol` | ✅ **正版**（reasoning 档未定） | **S/H = 1.05**（混合）/ **1.08**（仅未注入层）；S≈0.18 vs D≈0.35 |
+| **relay-A** | `gpt-5.5` | ⚠️ 无法判定 | 65.4% 推理污染，对库排名第 3 但前三名差距（0.027）小于同模型噪声（0.075） |
+| 自建 cliproxyapi | `gpt-5.6-sol` | ✅ 正版（**供应链确认**） | 网关日志 `Registered new model gpt-5.6-sol from provider codex`，3 个 ChatGPT 订阅 OAuth 账号 → OpenAI 后端，**链路上无替换点** |
+
+**relay-A 未发现掺假迹象。** 佐证：站内 `sol` vs `5.5`=0.3012、vs `5.4`=0.3794 → 三个名字是三个
+不同模型，非改名马甲；两边 sol 对论文库都呈「平铺、最近邻 gpt-5.5≈0.34」，即"谁都不像"，
+正是库中缺失的真·新模型该有的形状（若拿 5.5 冒充会紧贴 gpt-5.5）。
+
+**未排除**：relay-A sol 推理痕迹率 24.6% vs 参照 64.2%，差距大，**可能跑在更低 reasoning 档**。
+
+### 端点行为特征（画像层的实测样本）
+
+| | 自建 cliproxyapi | relay-A |
+|---|---|---|
+| 注入量 | 恒定 ~294 token（外壳**前置拼接**在你的 system 前） | 给了 system 就**整个替换**外壳（~46 token）；不给则注入 4383 token |
+| temperature | ❌ 不透传（T=0 六次给出 3 个不同值） | ❌ 不透传 |
+| max_tokens / seed / n / logprobs / system_fingerprint | ❌ 全不支持 | ❌ 全不支持 |
+| 特征响应头 | 无 | `x-oneapi-request-id` → 跑在 **One API / New API** 框架上 |
+| 账号轮换 | 3 个 codex 账号（仅 1 个有 sol）；480 次采样期间逐格 `prompt_tokens` 恒定，本轮未轮换 | **会轮换**：~70% 未注入(40-49 tok) / ~30% 注入(4400-6600 tok) |
+
+**结论**：订阅逆向网关一律不支持 logprobs / seed / n。这些能力的**有无**是判定端点类型的
+廉价探针（~5 次请求）；**支持 = 裸 API，用 logprobs 一次请求就能验模型，比采样强得多**。
+
+### 外部工具调研
+
+| 工具 | 方法 | 实测评价 |
+|---|---|---|
+| [api-relay-audit](https://github.com/toby-bridges/api-relay-audit) | 14 步协议/篡改审计 | **最成熟**（762★）。数值探针可信（实测报注入 ~294，与手测一致）；**判定层过度触发**：把拒绝话术当成 prompt 泄漏、对非 Claude 模型必报"替换嫌疑"（硬编码 `does not contain 'claude'`） |
+| [hvoy.ai](https://www.hvoy.ai) | 2 轮请求 × 5 维度 | **蜜罐实测：假端点通过 3/5**。型号特征/协议一致性/响应结构**零鉴别力**（只验协议实现）。仅知识问答 + 降智两维有力，但**题库静态**（已发出 100 万+ 次，运营者可硬编码答案） |
+| [claude-detector](https://github.com/7836246/claude-detector) | 19 探针 + 6 级判定 | 仅 Claude。最强的一招 `count_tokens_match` 用官方 `/v1/messages/count_tokens` 做**计费真值核验**——OpenAI 无对应端点，但 `tiktoken` 本地可算，**这条我们能补且他们对 GPT 做不到** |
+
+**hvoy 的题库原文**（2026-07-21 蜜罐捕获，静态、可被针对）：5 道 2026年1月时事题
+（超越特斯拉的车企 / 美国退出的国际组织 / Guy Parmelin 前任瑞士总统 / 保加利亚弃用货币 /
+Ciudad de la Paz 属国）+ 1 道自适应糖果组合推理题。参数 `max_completion_tokens: 10240`、
+`stream: true`、`stream_options.include_usage: true`、无 system prompt。
+
+**我们相对它的改进方向**：题库**程序化生成**（时事题按最近日期构造、推理题参数化模板），
+使硬编码失效。他们做不到这点——跨站横向对比需要固定标尺。
+
 ## 开发日志
 
 （按时间倒序，新的在上）
 
-- **2026-07-21** 项目建立。方法调研完成，上游数据集+代码已分析。设计定案：自建基线为主线、
-  论文库为可选参照、守门用实测而非名单。下一步 G0-G2。
+- **2026-07-22** 完成对照校准法（H/S/D）并实测：relay-A 的 `gpt-5.6-sol` 判定为正版。
+  正版参照落盘 `reference/`（一次性投入，以后测新中转不再消耗参照端的额度）。
+  新增 `verify-relay.js` 一条命令完成验证。修正两个方法错误：① `prompt_tokens` 分层最初被
+  误当作账号标签，实为题目长度（须**按格子内部**判断轮换）② `probe-endpoint.js` 固定文件名
+  导致覆盖了先前采集的基线，现按端点命名。
+- **2026-07-21** 项目建立。G0-G2 三层 golden test 全绿：归一化 335,889 条逐字段一致、
+  JSD/split-half 完全复现、AUC 0.971342 / EER 0.07282 精确复现（甩掉 R 依赖）。
+  实测发现论文盲区：harness 式网关吞掉 temperature/max_tokens，论文方法在那类端点上
+  不成立（论文只测了 OpenRouter）。从论文数据中读出它自己未强调的结论：**跨服务商分歧
+  10 组里 9 组是开源权重模型**，闭源模型基本不掉包（唯一例外 gpt-4 Azure vs OpenAI）。
