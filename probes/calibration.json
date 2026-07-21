@@ -1,0 +1,272 @@
+{
+ "calibrated_on": {
+  "endpoint_label": "genuine reference",
+  "model": "gpt-5.6-sol"
+ },
+ "reps": 3,
+ "note": "Instances are regenerated per run; only the FAMILY-level discrimination is reused.",
+ "by_family": {
+  "adaptive-pair": {
+   "n": 4,
+   "usable": 1,
+   "accHigh": 8,
+   "accLow": 4,
+   "reps": 12
+  },
+  "pigeonhole": {
+   "n": 4,
+   "usable": 0,
+   "accHigh": 12,
+   "accLow": 12,
+   "reps": 12
+  }
+ },
+ "usable_families": [],
+ "results": [
+  {
+   "family": "adaptive-pair",
+   "seed": 1,
+   "answer": 11,
+   "low": [
+    12,
+    12,
+    11
+   ],
+   "high": [
+    11,
+    14,
+    11
+   ],
+   "tokens": {
+    "low": [
+     2754,
+     1806,
+     1021
+    ],
+    "high": [
+     3106,
+     279,
+     3306
+    ]
+   },
+   "accLow": 1,
+   "accHigh": 2,
+   "usable": false,
+   "tokenRatio": 1.72
+  },
+  {
+   "family": "pigeonhole",
+   "seed": 2,
+   "answer": 10,
+   "low": [
+    10,
+    10,
+    10
+   ],
+   "high": [
+    10,
+    10,
+    10
+   ],
+   "tokens": {
+    "low": [
+     37,
+     48,
+     33
+    ],
+    "high": [
+     38,
+     47,
+     40
+    ]
+   },
+   "accLow": 3,
+   "accHigh": 3,
+   "usable": false,
+   "tokenRatio": 1.08
+  },
+  {
+   "family": "adaptive-pair",
+   "seed": 3,
+   "answer": 17,
+   "low": [
+    19,
+    20,
+    19
+   ],
+   "high": [
+    null,
+    17,
+    17
+   ],
+   "tokens": {
+    "low": [
+     2301,
+     2185,
+     1714
+    ],
+    "high": [
+     2017,
+     2452
+    ]
+   },
+   "accLow": 0,
+   "accHigh": 2,
+   "usable": false,
+   "tokenRatio": 1.12
+  },
+  {
+   "family": "pigeonhole",
+   "seed": 4,
+   "answer": 7,
+   "low": [
+    7,
+    7,
+    7
+   ],
+   "high": [
+    7,
+    7,
+    7
+   ],
+   "tokens": {
+    "low": [
+     5,
+     5,
+     5
+    ],
+    "high": [
+     5,
+     39,
+     37
+    ]
+   },
+   "accLow": 3,
+   "accHigh": 3,
+   "usable": false,
+   "tokenRatio": 7.4
+  },
+  {
+   "family": "adaptive-pair",
+   "seed": 5,
+   "answer": 12,
+   "low": [
+    10,
+    12,
+    12
+   ],
+   "high": [
+    12,
+    null,
+    null
+   ],
+   "tokens": {
+    "low": [
+     1859,
+     3202,
+     1892
+    ],
+    "high": [
+     5020
+    ]
+   },
+   "accLow": 2,
+   "accHigh": 1,
+   "usable": false,
+   "tokenRatio": 2.65
+  },
+  {
+   "family": "pigeonhole",
+   "seed": 6,
+   "answer": 7,
+   "low": [
+    7,
+    7,
+    7
+   ],
+   "high": [
+    7,
+    7,
+    7
+   ],
+   "tokens": {
+    "low": [
+     5,
+     5,
+     5
+    ],
+    "high": [
+     5,
+     5,
+     5
+    ]
+   },
+   "accLow": 3,
+   "accHigh": 3,
+   "usable": false,
+   "tokenRatio": 1
+  },
+  {
+   "family": "adaptive-pair",
+   "seed": 7,
+   "answer": 14,
+   "low": [
+    15,
+    12,
+    14
+   ],
+   "high": [
+    14,
+    14,
+    14
+   ],
+   "tokens": {
+    "low": [
+     2458,
+     2074,
+     2173
+    ],
+    "high": [
+     3814,
+     3116,
+     4425
+    ]
+   },
+   "accLow": 1,
+   "accHigh": 3,
+   "usable": true,
+   "tokenRatio": 1.76
+  },
+  {
+   "family": "pigeonhole",
+   "seed": 8,
+   "answer": 10,
+   "low": [
+    10,
+    10,
+    10
+   ],
+   "high": [
+    10,
+    10,
+    10
+   ],
+   "tokens": {
+    "low": [
+     5,
+     5,
+     5
+    ],
+    "high": [
+     5,
+     5,
+     5
+    ]
+   },
+   "accLow": 3,
+   "accHigh": 3,
+   "usable": false,
+   "tokenRatio": 1
+  }
+ ]
+}
