@@ -1,0 +1,20 @@
+{
+  "name": "llm-fingerprint",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Detect model substitution by third-party LLM API relays via single-token output distribution fingerprints.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "llmfp": "src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "test:golden": "node --test test/golden/",
+    "fetch-data": "node scripts/fetch-upstream-data.js",
+    "build-refdb": "node scripts/build-refdb.js"
+  }
+}

@@ -1,0 +1,17 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# upstream Zenodo data (~52MB) — npm run fetch-data
+data/upstream/
+*.zip
+
+# user baselines (contain endpoint URLs)
+baselines/
+
+# runtime
+node_modules/
+*.log
+tmp/
+.DS_Store
