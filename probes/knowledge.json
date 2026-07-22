@@ -1,0 +1,37 @@
+{
+  "note": "Knowledge-cutoff probes. UNLIKE the reasoning probes, these are CURATED, not generated: a fact's answer must come from a trusted source, not an algorithm, so there is no solver and no per-run regeneration. That makes the anti-hardcoding property weaker than the reasoning family (same structural weakness as hvoy). Mitigations: (1) each item carries its source + date so it is auditable and re-curatable; (2) sample a random subset per run from a pool kept larger than any single run.",
+  "purpose": "Detect substitution by a model whose training cutoff predates these events. Does NOT distinguish two current-generation models (e.g. gpt-5.5 vs gpt-5.6-sol) — their cutoffs are too close. Low value under the subscription-reverse threat model, where an arbitrary old model cannot be sourced.",
+  "calibration": {
+    "verified_genuine_endpoint": "relay-A gpt-5.6-sol (effort=low, tools disabled)",
+    "date": "2026-07-22",
+    "result": "answered 4/5 correctly; darts item dropped as too niche for stable recall even on the genuine model"
+  },
+  "answer_window": "Events must fall AFTER a plausible old-model cutoff and BEFORE the current model's cutoff. Jan 2026 events clear this for gpt-5.6-sol (confirmed above). Re-verify when the reference model changes.",
+  "instruction": "Answer only from your own training knowledge. Do not browse, search, or call tools. Reply with just the name/country/number, nothing else. If you do not know, reply UNKNOWN.",
+  "items": [
+    {
+      "q": "Which automaker surpassed Tesla as the world's best-selling electric-vehicle maker based on 2025 sales?",
+      "a": ["BYD"],
+      "date": "2026-01",
+      "source": "https://en.wikipedia.org/wiki/Portal:Current_events/January_2026"
+    },
+    {
+      "q": "Which country adopted the euro and became the 21st member of the eurozone on January 1, 2026?",
+      "a": ["Bulgaria"],
+      "date": "2026-01-01",
+      "source": "https://en.wikipedia.org/wiki/Portal:Current_events/January_2026"
+    },
+    {
+      "q": "Who became President of Switzerland on January 1, 2026?",
+      "a": ["Parmelin"],
+      "date": "2026-01-01",
+      "source": "https://en.wikipedia.org/wiki/Portal:Current_events/January_2026"
+    },
+    {
+      "q": "Ciudad de la Paz became the new capital of which country in January 2026?",
+      "a": ["Equatorial Guinea"],
+      "date": "2026-01",
+      "source": "https://en.wikipedia.org/wiki/Portal:Current_events/January_2026"
+    }
+  ]
+}
