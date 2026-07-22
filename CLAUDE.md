@@ -142,7 +142,7 @@ Node.js ≥ 20（实测 22.14）。**零运行时依赖**，跟上游一致。�
 ```bash
 npm test                 # 全部测试
 npm run test:golden      # 只跑 golden test（复现论文数字，最重要）
-npm run fetch-data       # 从 Zenodo 拉论文数据集+代码到 data/upstream/（gitignored，~52MB）
+npm run fetch-data       # 从 Zenodo 拉论文数据集+代码到 data/upstream/（gitignored，下载~52MB/解压~500MB）
 
 # 【主用途】验一个新中转，只花新中转的额度，正版参照读本地 reference/
 node scripts/verify-relay.js --endpoint https://xxx/v1 --key sk-xxx \
@@ -182,25 +182,53 @@ node scripts/probe-endpoint.js --endpoint <已知正版端点> --key <k> --model
 
 ```
 src/
-  normalize/     归一化（薄封装 vendor 的纯函数）
-  stats/         jsd.js / verify.js（ROC·EER）/ distributions.js
-  probe/         采样引擎 + adapters/{openai,anthropic}.js
-  baseline/      自建基线存储与版本管理
-  verdict/       三模式判定
-  ui/            本地 web 界面（Express 风格但用原生 http）
-  cli.js
-vendor/pamela/   上游 MIT 代码，逐字复用，不改写
-refdb/           构建产物：论文 176×40 参考指纹（提交进 git，~2MB）
-data/upstream/   Zenodo 原始数据（gitignored，~52MB，npm run fetch-data 获取）
-baselines/       用户自建基线（gitignored，含端点信息）
-test/golden/     G0-G2
+  lib/jsonl.js          流式 JSONL 读取（上游文件 ~160MB）
+  normalize/index.js    归一化管线（薄封装 vendor 的纯函数）
+  stats/                jsd.js / verify.js（ROC·EER）/ distributions.js / divergence.js
+  probe/                runner.js（采样引擎）+ adapters/openai.js
+  probes/               第 1 层：reasoning.js（生成式+求解器）/ knowledge.js（策展）
+scripts/
+  fetch-upstream-data.js    从 Zenodo 拉数据（npm run fetch-data）
+  probe-endpoint.js         单端点采样 + 对论文库排名
+  compare-baselines.js      同端点多模型互比
+  calibrated-compare.js     手工四文件校准比对（H/S/D）
+  verify-relay.js           【第 2 层主入口】一条命令验新中转
+  calibrate-probes.js       在正版端点上校准推理题区分度
+  quick-check.js            【第 1 层主入口】查 reasoning 降档
+vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
+reference/           正版参照指纹（提交进 git，脱敏无端点URL）
+probes/              knowledge.json（知识题库）+ calibration.json（推理题校准）
+data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
+baselines/           采样产物（gitignored，含端点URL）
+test/golden/         G0-G2；test/probes.test.js 求解器+grader 单测
 ```
+
+**没有 CLI 统一入口 / GUI**（曾设想 `cli.js` / `ui/`，未做）：各脚本单一职责、按需组合，
+加 wrapper 不划算（奥卡姆）。验新中转的标准顺序见「## Runbook」。
 
 ## 命名约定
 
 - 文件 kebab-case，导出函数 camelCase
 - cell 键统一 `` `${task_id}|${lang}` ``，跟上游一致
 - 指纹 JSON 结构对齐上游 `distributions.json` 的 cell 记录（`model/task_id/lang/n_valid/dist/entropy_bits/mode`）
+
+## Runbook：验一个新中转（按顺序）
+
+**前提**：中转是 Codex 系（走 Responses API）。`reference/` 里已有对应模型的正版参照，
+否则先在已知正版端点采一份（见「采集新的正版参照」）。
+
+```bash
+# 1. 画像（~10 次）——先确认端点类型、是不是谎称官方直连、透不透传 effort
+node scripts/probe-endpoint.js --endpoint <url> --key <k> --model gpt-5.5   # 5.5 在论文库里，能排名
+
+# 2. 第 1 层 reasoning 降档（~36 次）——查有没有偷偷降 effort
+node scripts/quick-check.js --endpoint <url> --key <k> --model gpt-5.6-sol
+
+# 3. 第 2 层模型身份（480 次，最贵，起疑或换供应商时才跑）
+node scripts/verify-relay.js --endpoint <url> --key <k>   # 默认 subject=sol control=5.4
+```
+
+判读见各层说明。**第 2 层最硬（模型身份），第 1 层查降档，知识题最弱（见下）。**
 
 ## 密钥管理
 
