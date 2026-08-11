@@ -15,3 +15,6 @@ node_modules/
 *.log
 tmp/
 .DS_Store
+
+# local tool state (serena regenerates it per machine)
+.serena/
