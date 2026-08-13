@@ -105,6 +105,9 @@ export async function screenL1({ probe, model, refSubject, refControl, onProgres
 
   const { samples, counters, reasoningRate } = await runBattery({
     probe, model, cells: selection.cells, reps: selection.repsPerCell, role: 'subject', onProgress,
+    // 🔴 false: reference/ was collected without the trace pass, and a comparison is
+    // only valid between two sides normalised the same way.
+    applyReasoningTrace: false,
   });
 
   const result = evaluateL1({ samples, refSubject, selection, calibration });

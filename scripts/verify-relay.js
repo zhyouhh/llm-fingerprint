@@ -76,7 +76,7 @@ async function sample(model, role) {
   process.stdout.write(`\n  sampling ${model} (${QUICK_CELLS.length}x${reps} = ${logical} logical probes)\n`);
   const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
   const { samples: collected, counters, reasoningRate } = await runBattery({
-    probe, model, cells: QUICK_CELLS, reps, role,
+    probe, model, cells: QUICK_CELLS, reps, role, applyReasoningTrace: false,
     onProgress: ({ done, total }) => process.stdout.write(`\r    ${done}/${total}   `),
   });
   // 判定语义④ — the denominator is the LOGICAL sample count of this side, never the

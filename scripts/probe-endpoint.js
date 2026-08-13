@@ -49,7 +49,10 @@ console.log(`  ${cells.length} cells x ${reps} reps = ${cells.length * reps} log
 
 const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
 const { samples, counters, reasoningRate } = await runBattery({
-  probe, model, cells, reps,
+  // true: this script ranks against the paper's 176-model database, which WAS built
+  // with the trace pass. (A reference collected here for L1/L2 use is a different
+  // job — see the note in src/normalize/index.js.)
+  probe, model, cells, reps, applyReasoningTrace: true,
   onProgress: ({ done, total }) => process.stdout.write(`\r  ${done}/${total}   `),
 });
 

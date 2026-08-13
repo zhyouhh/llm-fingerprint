@@ -21,7 +21,7 @@ async function run(script, { cells = THREE_CELLS } = {}) {
   const stub = await startStub(script);
   try {
     const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
-    const out = await runBattery({ probe, model: 'stub-model', cells, concurrency: 2 });
+    const out = await runBattery({ applyReasoningTrace: false, probe, model: 'stub-model', cells, concurrency: 2 });
     return { ...out, stub };
   } finally { await stub.close(); }
 }
@@ -71,7 +71,7 @@ test('④ a retried sample reports its attempts, and the two counts diverge', as
   ]);
   try {
     const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
-    const { samples, counters } = await runBattery({
+    const { samples, counters } = await runBattery({ applyReasoningTrace: false,
       probe, model: 'stub-model', concurrency: 1,
       cells: [{ task_id: 'num100-random', lang: 'en', reps: 2 }],
     });
@@ -92,7 +92,7 @@ test('⑤ a network failure with no status code still counts as a transport fail
   const probe = createChatProbe({
     baseUrl: 'http://127.0.0.1:1/v1', apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 }, timeoutMs: 2000,
   });
-  const { samples, counters } = await runBattery({
+  const { samples, counters } = await runBattery({ applyReasoningTrace: false,
     probe, model: 'stub-model', concurrency: 2,
     cells: [{ task_id: 'num100-random', lang: 'en', reps: 2 }],
   });
@@ -121,7 +121,7 @@ test('the engine itself never retries — that belongs to the client', async () 
   const stub = await startStub([{ status: 429, json: {} }]);
   try {
     const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 } });
-    const { counters } = await runBattery({
+    const { counters } = await runBattery({ applyReasoningTrace: false,
       probe, model: 'stub-model', concurrency: 1,
       cells: [{ task_id: 'num100-random', lang: 'en', reps: 1 }],
     });
@@ -148,4 +148,42 @@ test('L1 budget: three cells at five reps is fifteen logical samples', async () 
   });
   assert.equal(samples.length, L1_LOGICAL_SAMPLES);
   assert.equal(counters.probes, L1_LOGICAL_SAMPLES);
+});
+
+test('the normalisation pass must be chosen explicitly, never defaulted', async () => {
+  // 🔴 The bug this prevents cost a whole live screening round. reference/ was collected
+  // WITHOUT the reasoning-trace pass; applying it against that reference marked two
+  // thirds of a healthy run as post_reasoning and reported the project's own genuine
+  // endpoint as inconclusive. Nothing errored — the comparison was simply void.
+  const stub = await startStub([{ json: chatOk('7') }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await assert.rejects(
+      () => runBattery({ probe, model: 'm', cells: [{ task_id: 'num100-random', lang: 'en', reps: 1 }] }),
+      /applyReasoningTrace must be passed explicitly/,
+    );
+  } finally { await stub.close(); }
+});
+
+test('reasoning_len alone triggers post_reasoning — the n>=20 threshold does not gate it', async () => {
+  // The threshold in detectReasoningPairs only governs INFERRING the flag for records
+  // that lack the field. Any record carrying reasoning_len > 0 is flagged outright, so a
+  // 15-sample L1 run trips it immediately — the opposite of what the plan once claimed.
+  const withTrace = {
+    model: 'stub-model', choices: [{ message: { content: '7' }, finish_reason: 'stop' }],
+    usage: { completion_tokens_details: { reasoning_tokens: 11 } },
+  };
+  const stub = await startStub([{ json: withTrace }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    const cells = [{ task_id: 'num100-random', lang: 'en', reps: 3 }];
+
+    const applied = await runBattery({ probe, model: 'stub-model', cells, applyReasoningTrace: true });
+    assert.ok(applied.samples.every((s) => s.state === 'post_reasoning'),
+      'three samples are far below n>=20, yet every one is flagged');
+
+    const notApplied = await runBattery({ probe, model: 'stub-model', cells, applyReasoningTrace: false });
+    assert.ok(notApplied.samples.every((s) => s.state === 'valid'),
+      'and with the pass off, the very same answers are perfectly usable');
+  } finally { await stub.close(); }
 });

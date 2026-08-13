@@ -63,7 +63,16 @@ export function normaliseCells(cells, defaultReps) {
  *   `samples` carries both the normalised fields and the contract fields, so callers
  *   need no second pass to find out what each sample was.
  */
-export async function runBattery({ probe, model, cells, reps = 30, concurrency = 6, role = 'subject', onProgress }) {
+export async function runBattery({ probe, model, cells, reps = 30, concurrency = 6, role = 'subject',
+                                   applyReasoningTrace, onProgress }) {
+  // 🔴 No default. The normalisation pass has to match whatever this run will be
+  // compared against (reference/ was collected without it, the paper's database with
+  // it), and a default would silently pick a side. Getting it wrong does not error —
+  // it just voids the comparison, which is the worst possible failure mode here.
+  if (typeof applyReasoningTrace !== 'boolean') {
+    throw new Error('runBattery: applyReasoningTrace must be passed explicitly — ' +
+      'false when comparing against reference/, true when ranking against the paper database');
+  }
   const { prompts } = loadVendorConfig();
   const taskById = Object.fromEntries(prompts.tasks.map((t) => [t.id, t]));
   const plan = normaliseCells(cells, reps);
@@ -108,7 +117,7 @@ export async function runBattery({ probe, model, cells, reps = 30, concurrency =
 
   // Normalise the whole batch at once: the post_reasoning pre-pass is per (model,
   // provider) across all records, so it cannot be decided sample by sample.
-  const normalised = normalizeRecords(raw);
+  const normalised = normalizeRecords(raw, { applyReasoningTrace });
 
   const samples = normalised.map((rec) => makeSample({
     ...rec,

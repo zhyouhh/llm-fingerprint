@@ -48,24 +48,38 @@ export function selectRuns(runsDir, explicit = null) {
  * Normalise records already in memory — the live sampling path, where nothing has been
  * written to disk yet.
  *
- * Same semantics as normalizeRuns() below, reasoning-trace pre-pass included:
- * `post_reasoning` is decided per (model, provider) across the WHOLE batch using
- * upstream's `n >= 20 && rsn/n >= 0.3` threshold (vendor/pamela/normalize-core.js:120).
- * One consequence worth knowing rather than rediscovering: L1 collects 15 samples a run
- * and can never trip that threshold, while L2's 90-per-side can. The asymmetry belongs
- * to the threshold, not to either layer.
+ * 🔴 `applyReasoningTrace` MUST match whatever the comparison target was normalised
+ * with. This is not a tuning knob — it is the "采样参数不可改" constraint in a second
+ * guise, and getting it wrong silently voids the comparison:
+ *
+ *   reference/genuine-*.json  collected WITHOUT the trace pass. 154 of its 240 samples
+ *                             carry reasoning_len > 0 (this model routinely emits 9–13
+ *                             reasoning tokens) yet every one is answer_class 'valid'.
+ *                             → L1/L2 must pass `applyReasoningTrace: false`.
+ *   the paper's 176-model DB  built WITH it (normalizeRuns below).
+ *                             → ranking against it must pass true.
+ *
+ * Applying it against reference/ marks two thirds of a perfectly healthy run as
+ * post_reasoning, drops the cells, and reports the project's own genuine endpoint as
+ * inconclusive. That is exactly what happened on the first live screen.
+ *
+ * <sub>⚠️ A note that was wrong and is worth correcting explicitly: the `n >= 20`
+ * threshold in detectReasoningPairs does NOT gate this. emittedTrace flags any record
+ * with reasoning_len > 0 outright; the threshold only governs INFERRING the flag for
+ * older records that lack the field. A 15-sample L1 run trips it immediately.</sub>
  *
  * @param {object[]} records raw records in upstream's responses.jsonl shape
+ * @param {{applyReasoningTrace?: boolean}} [opts]
  * @returns {object[]} the same records plus {normalized, answer_class, color_canon}
  */
-export function normalizeRecords(records) {
+export function normalizeRecords(records, { applyReasoningTrace = true } = {}) {
   const { prompts, colorLex } = loadVendorConfig();
   const normalize = createNormalizer(prompts, colorLex);
-  const reasoningPairs = detectReasoningPairs(records);
+  const reasoningPairs = applyReasoningTrace ? detectReasoningPairs(records) : new Set();
 
   return records.map((rec) => {
     const n = normalize(rec);
-    if (emittedTrace(rec, reasoningPairs)) n.answer_class = 'post_reasoning';
+    if (applyReasoningTrace && emittedTrace(rec, reasoningPairs)) n.answer_class = 'post_reasoning';
     return { ...rec, ...n };
   });
 }
