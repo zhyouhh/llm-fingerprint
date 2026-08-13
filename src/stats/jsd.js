@@ -46,7 +46,12 @@ export function meanJsd(a, b) {
  * @param {Record<string, number>} counts
  * @param {number} minN
  */
-export function toDist(counts, minN = MIN_N) {
+export function toDist(counts, minN) {
+  // I-14: no default. With one, L1's five-sample cells silently return null against
+  // the paper's MIN_N of 10 — no error, no cell, no verdict, and nothing to look at.
+  if (!Number.isInteger(minN) || minN < 1) {
+    throw new Error(`toDist(counts, minN): minN is required (L1 passes its reps, L2 passes ${MIN_N})`);
+  }
   const n = Object.values(counts).reduce((a, b) => a + b, 0);
   if (n < minN) return null;
   return Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, v / n]));

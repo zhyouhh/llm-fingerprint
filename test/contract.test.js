@@ -656,3 +656,16 @@ test('a network failure is a value with no status, not an exception', async () =
   assert.equal(classifySample(SAMPLE_KIND.FINGERPRINT, { error: r.error }), 'transport_failure');
   assert.ok(isRetryable(r.error), 'and it is retryable — the previous adapter retried it too');
 });
+
+/* ── I-14 (phase 3): toDist has no default threshold ─────────────────────── */
+
+test('I-14: toDist requires its minN, because the wrong default is silent', async () => {
+  const { toDist, MIN_N } = await import('../src/stats/jsd.js');
+
+  // With a default of MIN_N=10, L1's five-sample cells return null: no error, no cell,
+  // no verdict, and nothing in the output pointing at the cause.
+  assert.throws(() => toDist({ a: 3 }), /minN is required/);
+  assert.deepEqual(toDist({ a: 3 }, 3), { a: 1 });
+  assert.equal(toDist({ a: 3 }, 10), null, 'below the threshold it still returns null — that part is unchanged');
+  assert.equal(MIN_N, 10, "the paper's threshold stays available for L2");
+});
