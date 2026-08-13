@@ -26,6 +26,7 @@ export function createGetProbe({ timeoutMs = DEFAULT_TIMEOUT_MS,
     return {
       raw: res.ok ? res.raw_text : '',
       body: res.body,
+      headers: res.headers,
       error: res.error,
       http_status: res.status,
       latency_ms: res.latency_ms,

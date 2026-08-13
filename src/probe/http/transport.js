@@ -62,10 +62,15 @@ async function attemptOnce(url, init, timeoutMs) {
       try { body = JSON.parse(text); } catch { parseFailed = true; }
     }
 
+    // Response headers are a cheap endpoint fingerprint in their own right
+    // (x-oneapi-request-id ⇒ One API / New API, x-cpa-* ⇒ cliproxyapi), so they ride
+    // along on every outcome rather than only on success.
+    const headers = Object.fromEntries(res.headers);
+
     if (!res.ok) {
       // A non-2xx whose body is not JSON still has a status, and the status is the
       // information that matters. Do not upgrade it to malformed_json.
-      return { ok: false, status: res.status, error: classifyHttpError(res.status, body), raw_text: text };
+      return { ok: false, status: res.status, error: classifyHttpError(res.status, body), raw_text: text, headers };
     }
     if (parseFailed) {
       // I-6: a 200 carrying an HTML error page is a real relay behaviour. It is treated
@@ -76,9 +81,10 @@ async function attemptOnce(url, init, timeoutMs) {
         status: res.status,
         error: { status: res.status, code: 'malformed_json', message: text.slice(0, 300) },
         raw_text: text,
+        headers,
       };
     }
-    return { ok: true, status: res.status, body: body ?? {}, raw_text: text };
+    return { ok: true, status: res.status, body: body ?? {}, raw_text: text, headers };
   } catch (err) {
     const code = err?.name === 'AbortError' ? 'timeout' : 'network_error';
     // 🔴 status is null: there is no HTTP response to take a status from. DNS failures
@@ -118,6 +124,7 @@ export async function request(url, init = {}, {
     body: last.body ?? null,
     error: last.error ?? null,
     raw_text: last.raw_text ?? '',
+    headers: last.headers ?? {},
     attempts,
     latency_ms: Date.now() - started,
   };
