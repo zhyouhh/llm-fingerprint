@@ -1,8 +1,22 @@
-// Sampling engine: run the probe battery against one endpoint.
+// Sampling engine: run the fingerprint battery against one endpoint.
 //
-// Emits records in upstream's responses.jsonl shape so they flow straight into the
-// vendored normaliser and the G0-G2-verified statistics.
-import { loadVendorConfig, studyATasks } from '../normalize/index.js';
+// Records keep upstream's responses.jsonl shape so they flow straight into the vendored
+// normaliser and the G0-G2-verified statistics, with the contract's sample fields
+// (kind / state / attempts) layered on top.
+//
+// 🔴 This layer does NOT retry. Retry lives inside the outbound client (判定语义⑥);
+// two layers of three attempts is nine requests per probe, which would triple the
+// per-endpoint ceiling the compliance table promises.
+//
+// 🔴 And because the client no longer throws, the failure path had to change with it.
+// The old engine reached its failure branch via an exception; a client that returns
+// `{error}` instead would have sailed straight down the success path, booking transport
+// failures as completions — counted in `ok`, folded into n_valid, handed to the
+// normaliser with raw:''. Deleting the retry without rewriting this branch is the one
+// mistake in this file that would not announce itself.
+
+import { loadVendorConfig, studyATasks, normalizeRecords } from '../normalize/index.js';
+import { SAMPLE_KIND, classifySample, makeSample, countersFromSamples } from '../contracts.js';
 
 /** Default quick battery: 4 tasks × 2 languages. Diverse in answer space and script. */
 export const QUICK_CELLS = [
@@ -18,69 +32,99 @@ export function fullCells(prompts) {
   return tasks.flatMap((t) => prompts.languages.map((l) => [t, l]));
 }
 
-async function withRetry(fn, { maxRetries = 4, baseMs = 1500 }) {
-  let last;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try { return await fn(); } catch (e) {
-      last = e;
-      if (!e.retryable || attempt === maxRetries) throw e;
-      await new Promise((r) => setTimeout(r, Math.min(baseMs * 2 ** attempt, 30_000)));
-    }
-  }
-  throw last;
+/**
+ * Accept either upstream's [task_id, lang] pairs or the per-cell {task_id, lang, reps}
+ * form the cell selector emits. Per-cell reps is the point: a battery that spends the
+ * same number of samples on a zero-signal cell as on a discriminating one wastes a
+ * quarter of its budget (决策 #4).
+ */
+export function normaliseCells(cells, defaultReps) {
+  return cells.map((cell) => {
+    const [task_id, lang, reps] = Array.isArray(cell)
+      ? [cell[0], cell[1], defaultReps]
+      : [cell.task_id, cell.lang, cell.reps ?? defaultReps];
+    if (!task_id || !lang) throw new Error(`bad cell: ${JSON.stringify(cell)}`);
+    if (!Number.isInteger(reps) || reps < 1) throw new Error(`bad reps for ${task_id}|${lang}: ${reps}`);
+    return { task_id, lang, reps };
+  });
 }
 
 /**
  * Run the battery.
  *
  * @param {object} opts
- * @param {(a: object) => Promise<object>} opts.ask   adapter from src/probe/adapters
+ * @param {(a: {model, system, user}) => Promise<object>} opts.probe  outbound chat probe
  * @param {string} opts.model
- * @param {Array<[string,string]>} opts.cells        [task_id, lang] pairs
- * @param {number} opts.reps                          samples per cell (upstream uses 30)
- * @param {number} opts.concurrency
- * @param {(p: object) => void} [opts.onProgress]
- * @returns {Promise<{records: object[], failures: object[], reasoningRate: number}>}
+ * @param {Array} opts.cells           [task_id, lang] pairs or {task_id, lang, reps}
+ * @param {number} [opts.reps]         default samples per cell when a cell omits it
+ * @param {number} [opts.concurrency]
+ * @param {string} [opts.role]         'subject' | 'control' — L2 keeps the sides apart
+ * @returns {Promise<{samples, counters, reasoningRate}>}
+ *   `samples` carries both the normalised fields and the contract fields, so callers
+ *   need no second pass to find out what each sample was.
  */
-export async function runBattery({ ask, model, cells, reps = 30, concurrency = 6, onProgress }) {
+export async function runBattery({ probe, model, cells, reps = 30, concurrency = 6, role = 'subject', onProgress }) {
   const { prompts } = loadVendorConfig();
   const taskById = Object.fromEntries(prompts.tasks.map((t) => [t.id, t]));
+  const plan = normaliseCells(cells, reps);
 
   const jobs = [];
-  for (const [task_id, lang] of cells) {
+  for (const { task_id, lang, reps: cellReps } of plan) {
     const task = taskById[task_id];
     if (!task) throw new Error(`unknown task ${task_id}`);
-    for (let rep = 0; rep < reps; rep++) jobs.push({ task_id, lang, rep, task });
+    for (let rep = 0; rep < cellReps; rep++) jobs.push({ task_id, lang, rep, task });
   }
 
-  const records = [], failures = [];
-  let done = 0, reasoningSeen = 0, ok = 0;
+  const raw = new Array(jobs.length);
   let cursor = 0;
+  let done = 0;
 
   async function worker() {
     while (cursor < jobs.length) {
-      const job = jobs[cursor++];
+      const index = cursor++;
+      const job = jobs[index];
       const system = prompts.system_prompts[job.lang];
       const user = job.task.prompts[job.lang];
-      try {
-        const r = await withRetry(() => ask({ model, system, user }), {});
-        records.push({
-          model, task_id: job.task_id, lang: job.lang, temperature: 1, rep: job.rep,
-          provider: 'probe', raw: r.raw, finish_reason: r.finish_reason,
-          model_reported: r.model_reported, reasoning_len: r.reasoning_len,
-          latency_ms: r.latency_ms, usage: r.usage, error: null,
-          key: `${model}|${job.task_id}|${job.lang}|1|${job.rep}`,
-        });
-        ok++;
-        if (r.reasoning_len > 0) reasoningSeen++;
-      } catch (e) {
-        failures.push({ ...job, task: undefined, error: String(e.message) });
-      }
+      const r = await probe({ model, system, user });   // never throws for transport
+
+      raw[index] = {
+        model, task_id: job.task_id, lang: job.lang, temperature: 1, rep: job.rep,
+        provider: 'probe', role,
+        // 🔴 raw stays '' on failure so the normaliser cannot mistake an error page for
+        // an answer; `error` is what tells the two apart (判定语义③).
+        raw: r.error ? '' : r.raw,
+        error: r.error, http_status: r.http_status, attempts: r.attempts,
+        latency_ms: r.latency_ms, usage: r.usage,
+        finish_reason: r.finish_reason, model_reported: r.model_reported,
+        reasoning_len: r.reasoning_len ?? 0,
+        key: `${model}|${job.task_id}|${job.lang}|1|${job.rep}`,
+      };
       done++;
-      if (onProgress && done % 10 === 0) onProgress({ done, total: jobs.length, ok, failed: failures.length });
+      if (onProgress && done % 10 === 0) onProgress({ done, total: jobs.length });
     }
   }
 
   await Promise.all(Array.from({ length: concurrency }, worker));
-  return { records, failures, reasoningRate: ok ? reasoningSeen / ok : 0 };
+
+  // Normalise the whole batch at once: the post_reasoning pre-pass is per (model,
+  // provider) across all records, so it cannot be decided sample by sample.
+  const normalised = normalizeRecords(raw);
+
+  const samples = normalised.map((rec) => makeSample({
+    ...rec,
+    kind: SAMPLE_KIND.FINGERPRINT,
+    state: classifySample(SAMPLE_KIND.FINGERPRINT, { error: rec.error, answer_class: rec.answer_class }),
+    attempts: rec.attempts,
+  }));
+
+  // Reasoning pollution is measured over samples that actually came back — a dead
+  // endpoint has no opinion on whether the model reasons.
+  const responded = samples.filter((s) => s.state !== 'transport_failure');
+  const reasoningSeen = responded.filter((s) => (s.reasoning_len ?? 0) > 0).length;
+
+  return {
+    samples,
+    counters: countersFromSamples(samples),
+    reasoningRate: responded.length ? reasoningSeen / responded.length : 0,
+  };
 }

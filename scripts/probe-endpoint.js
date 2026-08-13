@@ -2,50 +2,59 @@
 // Probe one endpoint and rank it against the published 176-model reference database.
 //
 // Usage:
-//   node scripts/probe-endpoint.js --endpoint URL --key KEY --model NAME [--reps 30] [--full]
+//   node scripts/probe-endpoint.js --endpoint <id> --model NAME [--reps 30] [--full]
 //
-// The verdict is a RANKING, not a proof. Read docs in CLAUDE.md before trusting it:
-// the reference database was collected on bare APIs at temperature 1 with a clean
-// ~40-token prompt. An endpoint that injects a harness prompt or ignores temperature
-// violates those conditions, and a mismatch then says nothing about the model.
+// Operations tool, not part of the main flow: this is how a new genuine reference gets
+// collected (决策 #9), and how a model that IS in the paper's database gets ranked.
+//
+// The verdict is a RANKING, not a proof. The reference database was collected on bare
+// APIs at temperature 1 with a clean ~40-token prompt; an endpoint that injects a
+// harness prompt or ignores temperature violates those conditions, and a mismatch then
+// says nothing about the model. Read CLAUDE.md before trusting it.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createOpenAIAdapter } from '../src/probe/adapters/openai.js';
+import { parseArgs, resolveEndpointArg } from '../src/lib/cli.js';
+import { createChatProbe } from '../src/probe/http/chat.js';
 import { runBattery, QUICK_CELLS, fullCells } from '../src/probe/runner.js';
 import { loadVendorConfig } from '../src/normalize/index.js';
-import { createNormalizer } from '../vendor/pamela/normalize-core.js';
 import { buildDistributions } from '../src/stats/distributions.js';
 import { jsd, MIN_N } from '../src/stats/jsd.js';
+import { rates } from '../src/contracts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
-  if (v.startsWith('--')) a.push([v.slice(2), arr[i + 1]?.startsWith('--') ? true : arr[i + 1] ?? true]);
-  return a;
-}, []));
+const args = parseArgs();
 
-const endpoint = args.endpoint ?? process.env.LLMFP_ENDPOINT;
-const apiKey = args.key ?? process.env.LLMFP_API_KEY;
-const model = args.model;
+const USAGE = `node scripts/probe-endpoint.js --endpoint <id> [--model NAME] [--reps 30] [--full]
+
+  --endpoint <id>  端点 id，见 config/endpoints.json
+  --model NAME     待测模型（默认取该端点的 models.subject）
+  --reps N         每格采样次数（默认 30）
+  --full           跑完整 40 格电池，而不是默认的 8 格快筛电池`;
+
+const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
+
+const model = args.model ?? endpoint.models.subject;
 const reps = Number(args.reps ?? 30);
-if (!endpoint || !apiKey || !model) {
-  console.error('need --endpoint --key --model (endpoint/key fall back to env)');
-  process.exit(1);
+if (!model) {
+  console.error('need --model (or a models.subject in config/endpoints.json)');
+  process.exit(2);
 }
 
-const { prompts, colorLex } = loadVendorConfig();
+const { prompts } = loadVendorConfig();
 const cells = args.full ? fullCells(prompts) : QUICK_CELLS;
 
-console.log(`probing ${model} @ ${endpoint.replace(/\/\/[^/]*@/, '//')}`);
-console.log(`  ${cells.length} cells x ${reps} reps = ${cells.length * reps} requests\n`);
+console.log(`probing ${model} @ ${endpoint.id} (${endpoint.base_url})`);
+console.log(`  ${cells.length} cells x ${reps} reps = ${cells.length * reps} logical probes\n`);
 
-const ask = createOpenAIAdapter({ endpoint, apiKey });
-const { records, failures, reasoningRate } = await runBattery({
-  ask, model, cells, reps,
-  onProgress: ({ done, total, ok, failed }) =>
-    process.stdout.write(`\r  ${done}/${total}  ok=${ok} failed=${failed}   `),
+const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
+const { samples, counters, reasoningRate } = await runBattery({
+  probe, model, cells, reps,
+  onProgress: ({ done, total }) => process.stdout.write(`\r  ${done}/${total}   `),
 });
-console.log(`\n  collected ${records.length}, failed ${failures.length}`);
+
+const failed = samples.filter((s) => s.state === 'transport_failure').length;
+console.log(`\n  ${counters.probes} logical probes, ${counters.http_attempts} network attempts, ${failed} failed`);
 
 // ---- reasoning gate (upstream's exclusion rule, applied live) ----
 console.log(`\n  reasoning-trace rate: ${(reasoningRate * 100).toFixed(1)}%`);
@@ -55,17 +64,18 @@ if (reasoningRate >= 0.3) {
   console.log('      fingerprint below is NOT comparable with the reference database.');
 }
 
-// ---- normalise + distributions ----
-const normalize = createNormalizer(prompts, colorLex);
-const normalized = records.map((r) => ({ ...r, ...normalize(r) }));
-const validRate = normalized.filter((r) => r.answer_class === 'valid').length / (normalized.length || 1);
-console.log(`  valid answer rate: ${(validRate * 100).toFixed(1)}%`);
-if (validRate < 0.2) {
+// ---- gate on the valid rate (硬约束: the method does not apply below 20%) ----
+const r = rates(samples, { logicalSamples: counters.probes });
+console.log(`  valid answer rate: ${(r.valid_rate * 100).toFixed(1)}%  (response rate ${(r.response_rate * 100).toFixed(1)}%)`);
+if (r.valid_rate < 0.2) {
   console.log('  ✗ below 20% — endpoint cannot produce single-pass completions. Aborting.');
   process.exit(2);
 }
 
-const ours = buildDistributions(normalized, { temperature: 1 });
+// ---- distributions ----
+// runBattery already normalised the batch (the post_reasoning pre-pass is per-batch and
+// cannot be done sample by sample), so the samples carry answer_class already.
+const ours = buildDistributions(samples, { temperature: 1 });
 const ourFp = {};
 for (const c of ours) if (c.n_valid >= MIN_N) ourFp[`${c.task_id}|${c.lang}`] = c.dist;
 const sampledCells = Object.keys(ourFp);
@@ -92,47 +102,52 @@ for (const [m, fp] of byModel) {
 }
 ranked.sort((a, b) => a.jsd - b.jsd);
 
-const claimedIdx = ranked.findIndex((r) => r.model.split('/').pop().replace(/-/g, '.') === model.replace(/-/g, '.'));
+const claimedIdx = ranked.findIndex((x) => x.model.split('/').pop().replace(/-/g, '.') === model.replace(/-/g, '.'));
 console.log(`\n  compared against ${ranked.length} reference models\n`);
 console.log('  rank  JSD     model');
-ranked.slice(0, 10).forEach((r, i) => {
+ranked.slice(0, 10).forEach((x, i) => {
   const mark = i === claimedIdx ? ' <-- claimed' : '';
-  console.log(`  ${String(i + 1).padStart(4)}  ${r.jsd.toFixed(4)}  ${r.model}${mark}`);
+  console.log(`  ${String(i + 1).padStart(4)}  ${x.jsd.toFixed(4)}  ${x.model}${mark}`);
 });
 if (claimedIdx > 9) {
-  console.log(`  ...`);
+  console.log('  ...');
   console.log(`  ${String(claimedIdx + 1).padStart(4)}  ${ranked[claimedIdx].jsd.toFixed(4)}  ${ranked[claimedIdx].model} <-- claimed`);
 }
 if (claimedIdx === -1) console.log(`  (claimed model "${model}" has no entry in the reference database)`);
 
+// ---- persist ----
+// Per-sample rows are kept so downstream analysis can STRATIFY. A gateway that rotates
+// across several upstream accounts emits a mixture, not one distribution; prompt_tokens
+// differs per account harness and therefore labels the stratum. Comparing a mixture
+// against a single-account fingerprint is invalid, so the raw rows must survive.
 const outDir = path.join(ROOT, 'baselines');
 mkdirSync(outDir, { recursive: true });
-const stamp = model.replace(/[^\w.-]/g, '_');
+// 🔴 Named per endpoint AND model: a fixed filename silently overwrote a previously
+// collected baseline once already.
+const stamp = `${endpoint.id}-${model}`.replace(/[^\w.-]/g, '_');
 const outPath = path.join(outDir, `probe-${stamp}.json`);
-// Per-sample rows are kept so downstream analysis can STRATIFY. A gateway that
-// rotates across several upstream accounts emits a mixture, not one distribution;
-// prompt_tokens differs per account harness and therefore labels the stratum.
-// Comparing a mixture against a single-account fingerprint is invalid, so the raw
-// rows must survive the aggregation step.
-const samples = normalized.map((r) => ({
-  cell: `${r.task_id}|${r.lang}`, rep: r.rep,
-  normalized: r.normalized, answer_class: r.answer_class,
-  prompt_tokens: r.usage?.prompt_tokens ?? null,
-  reasoning_len: r.reasoning_len ?? null,
+
+const rows = samples.map((s) => ({
+  cell: `${s.task_id}|${s.lang}`, rep: s.rep, state: s.state,
+  normalized: s.normalized, answer_class: s.answer_class,
+  prompt_tokens: s.usage?.prompt_tokens ?? null,
+  reasoning_len: s.reasoning_len ?? null,
+  attempts: s.attempts,
 }));
 
 writeFileSync(outPath, JSON.stringify({
-  endpoint, model, cells: sampledCells, reps,
-  reasoning_rate: reasoningRate, valid_rate: validRate,
-  fingerprint: ourFp, ranking: ranked.slice(0, 25), failures: failures.length,
-  samples,
+  endpoint: endpoint.base_url, endpoint_id: endpoint.id, model,
+  cells: sampledCells, reps,
+  probes: counters.probes, http_attempts: counters.http_attempts,
+  reasoning_rate: reasoningRate, valid_rate: r.valid_rate, response_rate: r.response_rate,
+  fingerprint: ourFp, ranking: ranked.slice(0, 25), failures: failed,
+  samples: rows,
 }, null, 2));
 
 const strata = {};
-for (const s of samples) strata[s.prompt_tokens] = (strata[s.prompt_tokens] ?? 0) + 1;
-const strataKeys = Object.keys(strata);
+for (const s of rows) strata[s.prompt_tokens] = (strata[s.prompt_tokens] ?? 0) + 1;
 console.log(`  prompt_tokens strata: ${JSON.stringify(strata)}`);
-if (strataKeys.length > 1) {
+if (Object.keys(strata).length > 1) {
   console.log('  ⚠️  multiple strata → this endpoint rotates upstream accounts for this model.');
   console.log('      Analyse per stratum; the pooled fingerprint is a mixture.');
 }

@@ -1,0 +1,131 @@
+{
+  "_fixture": {
+    "what": "One real POST /v1/responses body, captured 2026-08-14 from the self-hosted cliproxyapi gateway (a supply-chain-confirmed genuine endpoint).",
+    "why": "Stubs written from prose inherit the prose's mistakes and go green anyway. This is the ground truth for output[] traversal, usage field names, and what the Responses API does NOT have.",
+    "request": {
+      "model": "gpt-5.6-sol",
+      "input": "Say OK.",
+      "max_output_tokens": 16,
+      "store": false
+    },
+    "http_status": 200,
+    "redacted": [
+      "id",
+      "output[].id",
+      "created_at",
+      "completed_at",
+      "prompt_cache_key",
+      "safety_identifier"
+    ],
+    "notes": [
+      "No top-level output_text: the text lives at output[].content[].text (type \"output_text\").",
+      "No finish_reason at all — Responses signals completion via status + incomplete_details, so the outbound layer must map it.",
+      "store:false was echoed back, i.e. this gateway passes the flag through.",
+      "reasoning.effort/mode are echoed, which is what makes the effort probe readable here.",
+      "input_tokens 305 for a ~3-token input ⇒ ~300 tokens of gateway-injected preamble."
+    ]
+  },
+  "response": {
+    "id": "resp_REDACTED",
+    "object": "response",
+    "created_at": 0,
+    "status": "completed",
+    "background": false,
+    "completed_at": 0,
+    "error": null,
+    "frequency_penalty": 0,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "model": "gpt-5.6-sol",
+    "moderation": null,
+    "output": [
+      {
+        "id": "msg_REDACTED",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "type": "output_text",
+            "annotations": [],
+            "logprobs": [],
+            "text": "OK"
+          }
+        ],
+        "phase": "final_answer",
+        "role": "assistant"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "presence_penalty": 0,
+    "previous_response_id": null,
+    "prompt_cache_key": "REDACTED",
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "medium",
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": "REDACTED",
+    "service_tier": "default",
+    "store": false,
+    "temperature": 1,
+    "text": {
+      "format": {
+        "type": "text"
+      },
+      "verbosity": "medium"
+    },
+    "tool_choice": "auto",
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    },
+    "tools": [
+      {
+        "type": "image_generation",
+        "background": "auto",
+        "model": "gpt-image-2-codex",
+        "moderation": "auto",
+        "n": 1,
+        "output_compression": 100,
+        "output_format": "png",
+        "quality": "auto",
+        "size": "auto"
+      }
+    ],
+    "top_logprobs": 0,
+    "top_p": 0.98,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 305,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 5,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 310
+    },
+    "user": null,
+    "metadata": {}
+  }
+}

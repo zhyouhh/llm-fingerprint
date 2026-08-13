@@ -413,3 +413,246 @@ test('the contract artefact imports nothing from a later phase', () => {
   const imports = [...src.matchAll(/^import\s.*?from\s+'([^']+)'/gm)].map((m) => m[1]);
   assert.deepEqual(imports, ['./lib/errors.js'], 'contracts.js must depend only on the error type');
 });
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * I-N — outbound HTTP invariants. Phase 2 owns I-1/2/3/4/5/6/8/9; I-14 arrives in
+ * phase 3 and I-11/I-16 in phase 4, because their producers are built there.
+ *
+ * 🔴 Every assertion here is made at the network boundary: which bytes arrived, on
+ * which path, how many times. Counting calls to an internal function would pin down
+ * whichever layer currently holds the retry loop — and that layer is explicitly free
+ * to move.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+import { execFileSync } from 'node:child_process';
+import { startStub, chatOk, responsesOk } from './helpers/stub-server.js';
+import { createChatProbe, buildChatProbeBody, PROBE_PARAMS } from '../src/probe/http/chat.js';
+import { createResponsesClient, extractText, mapFinishReason } from '../src/probe/http/responses.js';
+import { createGetProbe } from '../src/probe/http/get.js';
+import { isRetryable } from '../src/probe/http/transport.js';
+
+const FAST_RETRY = { attempts: 3, baseDelayMs: 1 };   // 判定语义⑥ allows ms delays for exactly this
+const snapshot = JSON.parse(
+  readFileSync(new URL('./fixtures/chat-request-snapshot.json', import.meta.url), 'utf8'),
+);
+const realResponse = JSON.parse(
+  readFileSync(new URL('./fixtures/responses-sample.json', import.meta.url), 'utf8'),
+).response;
+
+test('I-1: the fingerprint body is byte-identical to what collected the reference', async () => {
+  const stub = await startStub([{ json: chatOk() }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await probe({ model: 'MODEL_PLACEHOLDER', system: 'SYSTEM_PLACEHOLDER', user: 'USER_PLACEHOLDER' });
+
+    // The snapshot was captured from src/probe/adapters/openai.js — the code that
+    // actually collected reference/genuine-*.json — against a stub, with no temperature
+    // passed. Key order is part of it: a reordered body is a different shell.
+    assert.equal(stub.received[0].body, snapshot.body_bytes);
+  } finally { await stub.close(); }
+});
+
+test('I-1: no caller can inject a sampling parameter', async () => {
+  // The old adapter signature was ask({..., temperature = 1}), so "byte-identical" held
+  // only while every caller happened not to pass one. There is now nowhere to put it.
+  const stub = await startStub([{ json: chatOk() }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await probe({ model: 'm', system: 's', user: 'u', temperature: 0, max_tokens: 4096, top_p: 0.5 });
+
+    const sent = stub.received[0].json;
+    assert.equal(sent.temperature, PROBE_PARAMS.temperature, 'temperature must stay pinned at 1');
+    assert.equal(sent.max_tokens, PROBE_PARAMS.max_tokens);
+    assert.ok(!('top_p' in sent), 'unknown parameters must not reach the wire');
+    assert.equal(JSON.stringify(sent), JSON.stringify(buildChatProbeBody({ model: 'm', system: 's', user: 'u' })));
+  } finally { await stub.close(); }
+});
+
+test('I-2: the fingerprint path is baseUrl + /chat/completions, version segment included', async () => {
+  const stub = await startStub([{ json: chatOk() }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await probe({ model: 'm', system: 's', user: 'u' });
+    assert.equal(stub.received[0].path, '/v1/chat/completions');
+    assert.equal(snapshot.path, '/v1/chat/completions', 'and it has not moved since the snapshot');
+  } finally { await stub.close(); }
+});
+
+test('I-3: reasoning.effort / reasoning.mode appear only on the Responses path', async () => {
+  const stub = await startStub([{ json: chatOk() }, { json: responsesOk() }]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await probe({ model: 'm', system: 's', user: 'u' });
+    const chatBody = stub.received[0].json;
+    // ⚠️ What is banned is those two KEYS, not the reasoning object — I-1 requires
+    // reasoning:{enabled:false} to be present.
+    assert.deepEqual(chatBody.reasoning, { enabled: false });
+    assert.ok(!('effort' in chatBody.reasoning) && !('mode' in chatBody.reasoning));
+
+    const client = createResponsesClient({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await client({ model: 'm', input: 'x', reasoning: { effort: 'high', mode: 'standard' } });
+    assert.deepEqual(stub.received[1].json.reasoning, { effort: 'high', mode: 'standard' });
+  } finally { await stub.close(); }
+});
+
+test('I-4: every probe-path fetch lives in src/probe/http/', () => {
+  // A lint, not a behavioural contract: it cannot see node:https, undici, or an aliased
+  // globalThis.fetch. Treat it as a guard against new outbound points appearing by
+  // accident, not as proof there are none.
+  const out = execFileSync('grep', ['-rln', 'fetch(', 'src', 'scripts', '--include=*.js'],
+    { encoding: 'utf8', cwd: new URL('..', import.meta.url).pathname }).trim().split('\n');
+  const offenders = out.filter((f) => !f.startsWith('src/probe/http/') && f !== 'scripts/fetch-upstream-data.js');
+  assert.deepEqual(offenders, [], 'outbound HTTP outside the one directory (Zenodo download excepted)');
+});
+
+test('I-5: a non-2xx comes back as a value, and the code falls back in order', async () => {
+  const stub = await startStub([
+    { status: 400, json: { error: { code: 'invalid_parameter', message: 'bad seed' } } },
+    { status: 400, json: { error: { type: 'invalid_request_error', message: 'no code field' } } },
+    { status: 503, json: { detail: 'upstream down' } },
+  ]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 } });
+
+    const a = await probe({ model: 'm', system: 's', user: 'u' });
+    assert.equal(a.error.code, 'invalid_parameter', 'body error.code wins');
+    assert.equal(a.error.status, 400);
+    assert.equal(a.raw, '', 'raw is empty string on failure, never null and never the error page');
+
+    const b = await probe({ model: 'm', system: 's', user: 'u' });
+    assert.equal(b.error.code, 'invalid_request_error', 'error.type is the second choice');
+
+    const c = await probe({ model: 'm', system: 's', user: 'u' });
+    assert.equal(c.error.code, 'http_503', 'synthesised from the status when the body says nothing');
+  } finally { await stub.close(); }
+});
+
+test('I-6: a 200 carrying an HTML error page is treated like a 5xx, retry included', async () => {
+  const stub = await startStub([
+    { status: 200, text: '<html><body>502 Bad Gateway</body></html>', headers: { 'content-type': 'text/html' } },
+    { status: 200, text: '<html><body>502 Bad Gateway</body></html>', headers: { 'content-type': 'text/html' } },
+    { status: 200, json: chatOk('42') },
+  ]);
+  try {
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    const r = await probe({ model: 'm', system: 's', user: 'u' });
+
+    assert.equal(r.raw, '42', 'the retry recovered');
+    assert.equal(stub.count, 3, 'malformed 2xx must be retried, like the previous adapter did');
+    assert.ok(isRetryable({ status: 200, code: 'malformed_json' }));
+  } finally { await stub.close(); }
+});
+
+test('I-8: 429/5xx retry and permanent 4xx does not — counted at the wire, both paths', async () => {
+  for (const [label, make] of [
+    ['chat', (base) => {
+      const probe = createChatProbe({ baseUrl: base, apiKey: 'k', retry: FAST_RETRY });
+      return () => probe({ model: 'm', system: 's', user: 'u' });
+    }],
+    ['responses', (base) => {
+      const client = createResponsesClient({ baseUrl: base, apiKey: 'k', retry: FAST_RETRY });
+      return () => client({ model: 'm', input: 'x' });
+    }],
+  ]) {
+    const okBody = label === 'chat' ? chatOk('7') : responsesOk('7');
+
+    const retrying = await startStub([{ status: 429, json: {} }, { status: 429, json: {} }, { json: okBody }]);
+    try {
+      const r = await make(retrying.baseUrl)();
+      assert.equal(retrying.count, 3, `${label}: stub must see exactly 3 requests`);
+      assert.equal(r.attempts, 3, `${label}: attempts must report the network count`);
+      assert.equal(r.error, null, `${label}: the third one succeeded`);
+    } finally { await retrying.close(); }
+
+    const permanent = await startStub([{ status: 400, json: { error: { code: 'bad' } } }]);
+    try {
+      const r = await make(permanent.baseUrl)();
+      assert.equal(permanent.count, 1, `${label}: a permanent 4xx must not be retried`);
+      assert.equal(r.attempts, 1);
+      assert.equal(r.error.code, 'bad');
+    } finally { await permanent.close(); }
+  }
+});
+
+test('I-8: retry never regresses below the current three attempts', () => {
+  // scripts/quick-check.js:63 and calibrate-probes.js:39 both do 3 today.
+  assert.equal(assertRetryConfig({}).attempts, 3);
+  assert.throws(() => assertRetryConfig({ attempts: 2 }), UsageError);
+});
+
+test('I-9: store:false always goes out, and extra cannot switch it off', async () => {
+  const stub = await startStub([{ json: responsesOk() }]);
+  try {
+    const client = createResponsesClient({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    await client({ model: 'm', input: 'x' });
+    assert.equal(stub.received[0].json.store, false, 'default body carries it');
+
+    // ⚠️ Testing only the default body would let `{store:false, ...extra}` pass — and
+    // that shape is exactly how extra.store=true would disable the protection.
+    for (const key of ['store', 'model', 'input', 'max_output_tokens']) {
+      await assert.rejects(
+        () => client({ model: 'm', input: 'x', extra: { [key]: 'hijack' } }),
+        UsageError, key,
+      );
+    }
+    assert.equal(stub.count, 1, 'a colliding extra must throw BEFORE anything is sent');
+  } finally { await stub.close(); }
+});
+
+test('Responses extraction follows the real captured body, not a description of it', () => {
+  // The live shape has no top-level output_text and no finish_reason; a stub written
+  // from prose would have invented both and passed.
+  assert.equal(extractText(realResponse), 'OK');
+  assert.ok(!('output_text' in realResponse), 'no top-level output_text exists');
+  assert.ok(!('finish_reason' in realResponse), 'Responses has no finish_reason');
+  assert.equal(mapFinishReason(realResponse), 'stop', 'so status must be mapped onto one');
+
+  assert.equal(mapFinishReason({ status: 'incomplete', incomplete_details: { reason: 'max_output_tokens' } }),
+    'max_output_tokens', 'a truncated answer must stay distinguishable from a finished one');
+  assert.equal(mapFinishReason({}), null);
+  assert.equal(extractText({ output: [{ type: 'reasoning', summary: [] }] }), '',
+    'reasoning items carry no text and must not break traversal');
+});
+
+test('待消解 #2 at the wire: every outbound path returns the full result shape', async () => {
+  // The contract test in phase 1 pins the shape; this one proves the three real paths
+  // actually produce it — including the keys that must be present-but-null.
+  const stub = await startStub([{ json: chatOk() }, { json: responsesOk() }, { json: { data: [] } }]);
+  try {
+    const chat = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    const responses = createResponsesClient({ baseUrl: stub.baseUrl, apiKey: 'k', retry: FAST_RETRY });
+    const get = createGetProbe({ retry: FAST_RETRY });
+
+    const results = [
+      await chat({ model: 'm', system: 's', user: 'u' }),
+      await responses({ model: 'm', input: 'x' }),
+      await get({ url: `${stub.baseUrl}/models`, apiKey: 'k' }),
+    ];
+    for (const r of results) {
+      assert.doesNotThrow(() => assertOutboundResult(r));
+      for (const key of REQUIRED_OUTBOUND_KEYS) {
+        assert.ok(key in r, `${key} must be present even when there is nothing to put in it`);
+      }
+    }
+    assert.equal(results[0].model_reported, 'stub-model', 'chat reports the echoed model');
+    assert.equal(results[1].model_reported, 'stub-model', 'so does Responses');
+    assert.equal(results[2].model_reported, null, 'a GET has none — null, not absent');
+  } finally { await stub.close(); }
+});
+
+test('a network failure is a value with no status, not an exception', async () => {
+  // Nothing is listening on this port. `if (err.status)` is falsy here, which is exactly
+  // how a dead endpoint could get mistaken for a successful empty completion.
+  const probe = createChatProbe({
+    baseUrl: 'http://127.0.0.1:1/v1', apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 }, timeoutMs: 2000,
+  });
+  const r = await probe({ model: 'm', system: 's', user: 'u' });
+
+  assert.equal(r.error.status, null);
+  assert.equal(r.error.code, 'network_error');
+  assert.equal(r.raw, '');
+  assert.equal(r.http_status, null);
+  assert.equal(r.attempts, 3, 'a connection that never reached a server still costs attempts');
+  assert.equal(classifySample(SAMPLE_KIND.FINGERPRINT, { error: r.error }), 'transport_failure');
+  assert.ok(isRetryable(r.error), 'and it is retryable — the previous adapter retried it too');
+});

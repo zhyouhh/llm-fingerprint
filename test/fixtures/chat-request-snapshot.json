@@ -1,0 +1,28 @@
+{
+  "_fixture": {
+    "what": "Byte snapshot of the fingerprint request body, captured from src/probe/adapters/openai.js (the code that collected reference/genuine-*.json) against a local stub.",
+    "why": "I-1: reference fingerprints were collected with exactly these bytes. A different body is a different shell, and a different shell makes every distance incomparable with the reference.",
+    "captured_path": "/v1/chat/completions",
+    "note": "model/system/user are placeholders; everything else is literal. Key ORDER is part of the contract."
+  },
+  "path": "/v1/chat/completions",
+  "body": {
+    "model": "MODEL_PLACEHOLDER",
+    "messages": [
+      {
+        "role": "system",
+        "content": "SYSTEM_PLACEHOLDER"
+      },
+      {
+        "role": "user",
+        "content": "USER_PLACEHOLDER"
+      }
+    ],
+    "temperature": 1,
+    "max_tokens": 16,
+    "reasoning": {
+      "enabled": false
+    }
+  },
+  "body_bytes": "{\"model\":\"MODEL_PLACEHOLDER\",\"messages\":[{\"role\":\"system\",\"content\":\"SYSTEM_PLACEHOLDER\"},{\"role\":\"user\",\"content\":\"USER_PLACEHOLDER\"}],\"temperature\":1,\"max_tokens\":16,\"reasoning\":{\"enabled\":false}}"
+}

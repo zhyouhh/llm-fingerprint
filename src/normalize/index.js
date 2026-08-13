@@ -45,6 +45,32 @@ export function selectRuns(runsDir, explicit = null) {
 }
 
 /**
+ * Normalise records already in memory — the live sampling path, where nothing has been
+ * written to disk yet.
+ *
+ * Same semantics as normalizeRuns() below, reasoning-trace pre-pass included:
+ * `post_reasoning` is decided per (model, provider) across the WHOLE batch using
+ * upstream's `n >= 20 && rsn/n >= 0.3` threshold (vendor/pamela/normalize-core.js:120).
+ * One consequence worth knowing rather than rediscovering: L1 collects 15 samples a run
+ * and can never trip that threshold, while L2's 90-per-side can. The asymmetry belongs
+ * to the threshold, not to either layer.
+ *
+ * @param {object[]} records raw records in upstream's responses.jsonl shape
+ * @returns {object[]} the same records plus {normalized, answer_class, color_canon}
+ */
+export function normalizeRecords(records) {
+  const { prompts, colorLex } = loadVendorConfig();
+  const normalize = createNormalizer(prompts, colorLex);
+  const reasoningPairs = detectReasoningPairs(records);
+
+  return records.map((rec) => {
+    const n = normalize(rec);
+    if (emittedTrace(rec, reasoningPairs)) n.answer_class = 'post_reasoning';
+    return { ...rec, ...n };
+  });
+}
+
+/**
  * Normalise one or more raw runs into analysis-ready records.
  *
  * Nothing is dropped: invalid / refusal / empty / post_reasoning answers stay in the

@@ -13,48 +13,44 @@
 // are discarded as broken or beyond the model.
 //
 // Usage:
-//   node scripts/calibrate-probes.js --endpoint URL --key KEY [--model gpt-5.6-sol]
+//   node scripts/calibrate-probes.js --endpoint <id> [--model gpt-5.6-sol]
 //                                    [--n 8] [--reps 3] [--out probes/calibration.json]
 import { writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate, parseInteger } from '../src/probes/reasoning.js';
+import { parseArgs, resolveEndpointArg } from '../src/lib/cli.js';
+import { createResponsesClient } from '../src/probe/http/responses.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
-  if (v.startsWith('--')) a.push([v.slice(2), arr[i + 1]?.startsWith('--') ? true : arr[i + 1] ?? true]);
-  return a;
-}, []));
+const args = parseArgs();
 
-const endpoint = args.endpoint ?? process.env.LLMFP_ENDPOINT;
-const apiKey = args.key ?? process.env.LLMFP_API_KEY;
-const model = args.model ?? 'gpt-5.6-sol';
+const USAGE = `node scripts/calibrate-probes.js --endpoint <id> [--model M] [--n 8] [--reps 3]
+
+  --endpoint <id>  已知正版端点的 id —— 校准必须在正版上做
+  --model M        模型（默认取该端点的 models.subject）
+  --n N            题目数（默认 8）
+  --reps N         每题每档重复次数（默认 3）`;
+
+const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
+const model = args.model ?? endpoint.models.subject ?? 'gpt-5.6-sol';
 const n = Number(args.n ?? 8);
 const reps = Number(args.reps ?? 3);
 const outPath = args.out ?? path.join(ROOT, 'probes', 'calibration.json');
-if (!endpoint || !apiKey) { console.error('need --endpoint and --key'); process.exit(1); }
 
 /** Codex-lineage relays speak the Responses API; effort lives in reasoning.effort. */
+// Shared outbound client (I-4): retry lives inside it (判定语义⑥ — three attempts,
+// same as the inline loop this replaces), and it returns errors as values.
+const client = createResponsesClient({ baseUrl: endpoint.base_url, apiKey });
+
 async function ask(prompt, effort) {
-  for (let a = 0; a < 3; a++) {
-    try {
-      const r = await fetch(`${endpoint.replace(/\/$/, '')}/responses`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, input: prompt, max_output_tokens: 8192, reasoning: { effort } }),
-      });
-      if (!r.ok) { await new Promise((s) => setTimeout(s, 2000 * (a + 1))); continue; }
-      const j = await r.json();
-      let text = '';
-      for (const item of j.output ?? []) for (const c of item.content ?? []) if (c.text) text += c.text;
-      return { text: text.trim(), out: j.usage?.output_tokens ?? null };
-    } catch { await new Promise((s) => setTimeout(s, 2000 * (a + 1))); }
-  }
-  return null;
+  const r = await client({ model, input: prompt, maxOutputTokens: 8192, reasoning: { effort } });
+  if (r.error) return null;
+  return { text: r.raw.trim(), out: r.usage?.output_tokens ?? null };
 }
 
 const probes = generate(n, Number(args.seed ?? 1));
-console.log(`calibrating ${probes.length} probes on ${model} @ ${endpoint}`);
+console.log(`calibrating ${probes.length} probes on ${model} @ ${endpoint.id} (${endpoint.base_url})`);
 console.log(`  ${reps} reps x 2 effort levels each = ${probes.length * reps * 2} requests\n`);
 
 const results = [];

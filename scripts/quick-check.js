@@ -13,29 +13,33 @@
 // calibration file reports how many; --n defaults to that.
 //
 // Usage:
-//   node scripts/quick-check.js --endpoint URL --key KEY [--model gpt-5.6-sol]
+//   node scripts/quick-check.js --endpoint <id> [--model gpt-5.6-sol]
 //                               [--effort high] [--n 36]
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generate, parseInteger } from '../src/probes/reasoning.js';
+import { parseArgs, resolveEndpointArg } from '../src/lib/cli.js';
+import { createResponsesClient } from '../src/probe/http/responses.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
-  if (v.startsWith('--')) a.push([v.slice(2), arr[i + 1]?.startsWith('--') ? true : arr[i + 1] ?? true]);
-  return a;
-}, []));
+const args = parseArgs();
 
-const endpoint = args.endpoint ?? process.env.LLMFP_ENDPOINT;
-const apiKey = args.key ?? process.env.LLMFP_API_KEY;
-const model = args.model ?? 'gpt-5.6-sol';
+const USAGE = `node scripts/quick-check.js --endpoint <id> [--model M] [--effort high] [--n 36]
+
+  --endpoint <id>  端点 id，见 config/endpoints.json
+  --model M        待测模型（默认取该端点的 models.subject）
+  --effort LEVEL   请求的 reasoning 档位（默认 high）
+  --n N            题数（默认按 probes/calibration.json 算出的所需样本量）`;
+
+const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
+const model = args.model ?? endpoint.models.subject ?? 'gpt-5.6-sol';
 const effort = args.effort ?? 'high';
-if (!endpoint || !apiKey) { console.error('need --endpoint and --key'); process.exit(1); }
 
 const calPath = path.join(ROOT, 'probes', 'calibration.json');
 if (!existsSync(calPath)) {
   console.error('missing probes/calibration.json — calibrate on a known-genuine endpoint first:');
-  console.error('  node scripts/calibrate-probes.js --endpoint <genuine> --key <k>');
+  console.error('  node scripts/calibrate-probes.js --endpoint <genuine-id>');
   process.exit(1);
 }
 const cal = JSON.parse(readFileSync(calPath, 'utf8'));
@@ -55,26 +59,18 @@ const n = Number(args.n ?? nDefault);
 const seed0 = (Date.now() % 1e6) | 0;
 const probes = generate(n * 2, seed0).filter((p) => p.family === FAMILY).slice(0, n);
 
-console.log(`layer 1: ${model} @ ${endpoint}  (effort=${effort})`);
+console.log(`reasoning check: ${model} @ ${endpoint.id} (${endpoint.base_url})  effort=${effort}`);
 console.log(`  reference rates for this model — high ${(pHigh * 100).toFixed(0)}%, low ${(pLow * 100).toFixed(0)}%`);
 console.log(`  ${probes.length} freshly generated ${FAMILY} probes\n`);
 
+// Shared outbound client (I-4): retry lives inside it, and it never throws for a
+// transport-level outcome — a null return here means "no usable answer", nothing more.
+const client = createResponsesClient({ baseUrl: endpoint.base_url, apiKey });
+
 async function ask(prompt) {
-  for (let a = 0; a < 3; a++) {
-    try {
-      const r = await fetch(`${endpoint.replace(/\/$/, '')}/responses`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, input: prompt, max_output_tokens: 8192, reasoning: { effort } }),
-      });
-      if (!r.ok) { await new Promise((s) => setTimeout(s, 2000 * (a + 1))); continue; }
-      const j = await r.json();
-      let text = '';
-      for (const item of j.output ?? []) for (const c of item.content ?? []) if (c.text) text += c.text;
-      return { val: parseInteger(text), out: j.usage?.output_tokens ?? null };
-    } catch { await new Promise((s) => setTimeout(s, 2000 * (a + 1))); }
-  }
-  return null;
+  const r = await client({ model, input: prompt, maxOutputTokens: 8192, reasoning: { effort } });
+  if (r.error) return null;
+  return { val: parseInteger(r.raw), out: r.usage?.output_tokens ?? null };
 }
 
 let correct = 0, answered = 0;

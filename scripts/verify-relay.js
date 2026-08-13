@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // One-command relay verification against the stored genuine reference.
 //
-//   node scripts/verify-relay.js --endpoint URL --key KEY [--subject gpt-5.6-sol] [--control gpt-5.4]
+//   node scripts/verify-relay.js --endpoint <id> [--subject gpt-5.6-sol] [--control gpt-5.4]
 //
 // Only the relay under test is sampled. The genuine side comes from reference/,
 // collected once — see reference/*.json for provenance and date.
@@ -17,36 +17,35 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createOpenAIAdapter } from '../src/probe/adapters/openai.js';
+import { parseArgs, resolveEndpointArg } from '../src/lib/cli.js';
+import { createChatProbe } from '../src/probe/http/chat.js';
 import { runBattery, QUICK_CELLS } from '../src/probe/runner.js';
-import { loadVendorConfig } from '../src/normalize/index.js';
-import { createNormalizer } from '../vendor/pamela/normalize-core.js';
 import { jsd, MIN_N } from '../src/stats/jsd.js';
+import { rates } from '../src/contracts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
-  if (v.startsWith('--')) a.push([v.slice(2), arr[i + 1]?.startsWith('--') ? true : arr[i + 1] ?? true]);
-  return a;
-}, []));
+const args = parseArgs();
 
-const endpoint = args.endpoint ?? process.env.LLMFP_ENDPOINT;
-const apiKey = args.key ?? process.env.LLMFP_API_KEY;
-const subject = args.subject ?? 'gpt-5.6-sol';
-const control = args.control ?? 'gpt-5.4';
+const USAGE = `node scripts/verify-relay.js --endpoint <id> [--subject M] [--control M] [--reps 30]
+
+  --endpoint <id>  端点 id，见 config/endpoints.json
+  --subject M      待验模型（默认取该端点的 models.subject）
+  --control M      对照模型（默认取该端点的 models.control）
+  --reps N         每格采样次数（默认 30）`;
+
+const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
+const subject = args.subject ?? endpoint.models.subject ?? 'gpt-5.6-sol';
+const control = args.control ?? endpoint.models.control ?? 'gpt-5.4';
 const reps = Number(args.reps ?? 30);
-if (!endpoint || !apiKey) { console.error('need --endpoint and --key'); process.exit(1); }
 
 const refPath = (m) => path.join(ROOT, 'reference', `genuine-${m}.json`);
 for (const m of [subject, control]) {
   if (!existsSync(refPath(m))) {
     console.error(`missing reference/genuine-${m}.json — collect it once from a known-genuine endpoint:`);
-    console.error(`  node scripts/probe-endpoint.js --endpoint <genuine> --key <k> --model ${m}`);
+    console.error(`  node scripts/probe-endpoint.js --endpoint <genuine-id> --model ${m}`);
     process.exit(1);
   }
 }
-
-const { prompts, colorLex } = loadVendorConfig();
-const normalize = createNormalizer(prompts, colorLex);
 
 /** Rebuild a per-cell distribution from raw samples (optionally filtered). */
 function fingerprint(samples, pred = null) {
@@ -72,28 +71,33 @@ const meanJsd = (a, b) => {
     : { v: NaN, cells: 0 };
 };
 
-async function sample(model) {
-  process.stdout.write(`\n  sampling ${model} (${QUICK_CELLS.length}x${reps} requests)\n`);
-  const ask = createOpenAIAdapter({ endpoint, apiKey });
-  const { records, failures, reasoningRate } = await runBattery({
-    ask, model, cells: QUICK_CELLS, reps,
-    onProgress: ({ done, total, failed }) => process.stdout.write(`\r    ${done}/${total} failed=${failed}   `),
+async function sample(model, role) {
+  const logical = QUICK_CELLS.length * reps;
+  process.stdout.write(`\n  sampling ${model} (${QUICK_CELLS.length}x${reps} = ${logical} logical probes)\n`);
+  const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
+  const { samples: collected, counters, reasoningRate } = await runBattery({
+    probe, model, cells: QUICK_CELLS, reps, role,
+    onProgress: ({ done, total }) => process.stdout.write(`\r    ${done}/${total}   `),
   });
-  const norm = records.map((r) => ({ ...r, ...normalize(r) }));
-  const samples = norm.map((r) => ({
-    cell: `${r.task_id}|${r.lang}`, normalized: r.normalized, answer_class: r.answer_class,
-    prompt_tokens: r.usage?.prompt_tokens ?? null, reasoning_len: r.reasoning_len ?? null,
+  // 判定语义④ — the denominator is the LOGICAL sample count of this side, never the
+  // number that happened to come back.
+  const r = rates(collected, { logicalSamples: logical });
+  const samples = collected.map((s) => ({
+    cell: `${s.task_id}|${s.lang}`, normalized: s.normalized, answer_class: s.answer_class,
+    state: s.state, prompt_tokens: s.usage?.prompt_tokens ?? null, reasoning_len: s.reasoning_len ?? null,
   }));
-  const valid = samples.filter((s) => s.answer_class === 'valid').length / (samples.length || 1);
-  process.stdout.write(`\r    done: ${records.length} ok, ${failures.length} failed, valid ${(valid * 100).toFixed(0)}%, reasoning ${(reasoningRate * 100).toFixed(1)}%\n`);
-  return { samples, reasoningRate, valid };
+  process.stdout.write(`\r    done: ${counters.probes} probes / ${counters.http_attempts} attempts, ` +
+    `valid ${(r.valid_rate * 100).toFixed(0)}%, reasoning ${(reasoningRate * 100).toFixed(1)}%\n`);
+  return { samples, counters, reasoningRate, valid: r.valid_rate, rates: r };
 }
 
-console.log(`verifying ${subject} @ ${endpoint}`);
+console.log(`verifying ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
 console.log(`  control model: ${control}   reference: reference/genuine-*.json`);
 
-const relaySubject = await sample(subject);
-const relayControl = await sample(control);
+const relaySubject = await sample(subject, 'subject');
+const relayControl = await sample(control, 'control');
+// 🔴 Either side below the gate kills the run: subject-fine/control-dead computes to a
+// comfortable-looking average while H and D are both garbage.
 if (relaySubject.valid < 0.2 || relayControl.valid < 0.2) {
   console.log('\n✗ endpoint cannot produce single-pass completions — method does not apply.');
   process.exit(2);
@@ -128,9 +132,11 @@ if (Math.abs(refSubject.reasoning_rate - relaySubject.reasoningRate) > 0.25) {
 }
 
 mkdirSync(path.join(ROOT, 'baselines'), { recursive: true });
-const out = path.join(ROOT, 'baselines', `verify-${new URL(endpoint).hostname}-${subject}.json`);
+const out = path.join(ROOT, 'baselines', `verify-${endpoint.id}-${subject}.json`);
 writeFileSync(out, JSON.stringify({
-  endpoint, subject, control, reps, H, S, D,
+  endpoint: endpoint.base_url, endpoint_id: endpoint.id, subject, control, reps, H, S, D,
+  probes: relaySubject.counters.probes + relayControl.counters.probes,
+  http_attempts: relaySubject.counters.http_attempts + relayControl.counters.http_attempts,
   reasoning: { reference: refSubject.reasoning_rate, relay: relaySubject.reasoningRate },
   samples: { subject: relaySubject.samples, control: relayControl.samples },
 }, null, 1));
