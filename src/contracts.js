@@ -440,11 +440,16 @@ export function assertVerdict(v) {
  * code that also implies L1 can return a wounded verdict.
  */
 export function makeL1Result({ verdict, s_screen, t_pass, t_fail, valid_rate, response_rate,
-                               live_cells, noise_floor = null }) {
+                               live_cells, noise_floor = null, reason = null,
+                               per_cell = null, dropped_cells = null }) {
   assertVerdict(verdict);
   return Object.freeze({
     verdict, s_screen, t_pass, t_fail, valid_rate, response_rate, live_cells,
-    noise_floor, // diagnostic print only — never enters the judgement
+    noise_floor,   // diagnostic print only — never enters the judgement
+    // Why this verdict, and where the distance came from. A bare number tells a reader
+    // nothing about WHICH cell moved, and that is usually the whole story — one drifted
+    // cell and three steady ones is a different situation from four that all shifted.
+    reason, per_cell, dropped_cells,
   });
 }
 
