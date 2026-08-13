@@ -6,11 +6,13 @@
   "description": "Detect model substitution by third-party LLM API relays via single-token output distribution fingerprints.",
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "test": "node --max-old-space-size=8192 --test \"test/**/*.test.js\"",
     "test:golden": "node --max-old-space-size=8192 --test \"test/golden/*.test.js\"",
-    "fetch-data": "node scripts/fetch-upstream-data.js"
+    "fetch-data": "node scripts/fetch-upstream-data.js",
+    "verify-data": "node scripts/fetch-upstream-data.js --verify",
+    "compare": "node scripts/compare.js"
   }
 }

@@ -1,0 +1,23 @@
+{
+  "_comment": "端点清单。字段设计借鉴 cuihuan/llm-gateway-bench (MIT) 的 gateways.json。绝不在这里放 key —— auth_env 只写环境变量的名字。",
+  "endpoints": [
+    {
+      "id": "example-relay",
+      "name": "示例中转",
+      "base_url": "https://example.com/v1",
+      "protocol": "responses",
+      "auth_env": "EXAMPLE_RELAY_API_KEY",
+      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "notes": "protocol 只决定 reasoning 档探测走哪条协议；指纹层永远走 /chat/completions"
+    },
+    {
+      "id": "chat-only-relay",
+      "name": "只提供 chat 的中转",
+      "base_url": "https://chat-only.example.com/v1",
+      "protocol": "chat",
+      "auth_env": "CHAT_ONLY_API_KEY",
+      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "notes": "protocol=chat 时 L0b 跳过 effort/reasoning.mode 探测，只发 2 个探针"
+    }
+  ]
+}

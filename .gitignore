@@ -10,6 +10,9 @@ data/upstream/
 # user baselines (contain endpoint URLs)
 baselines/
 
+# run artefacts: var/runs/*.json result files, and the SQLite db from milestone 2
+var/
+
 # runtime
 node_modules/
 *.log

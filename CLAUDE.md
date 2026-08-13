@@ -53,16 +53,22 @@ Language Models from Single-Token Output Distributions*（arXiv:2607.10252）。
 - `S ≥ 0.7 × D` → **疑似替换**
 - 之间 → 不确定，加格子或加采样
 
-## 四层协议
+## 分层协议
 
 | 层 | 内容 | 成本 | 能判定 | 要参照 |
 |---|---|---|---|---|
-| **0 端点画像** | 注入量、temperature/seed/logprobs/n 支持、reasoning_tokens、model 回显、特征响应头 | ~10 次 | 端点类型；**谎称"官方 API 直连"当场戳穿** | 否 |
-| **1 动态推理题** | 程序化生成 + 精确求解，见下 | **~36 次** | **reasoning 降档** | 否（需校准文件） |
-| **2 校准指纹** | H / S / D（上面那套） | 240 次/模型 | **模型身份** | 是 |
-| **3 漂移监控** | 定期重跑第 1 层 | ~6 次/周 | 跑熟后偷偷降配 | 否 |
+| **L0a 零请求画像** | `/api/status` 开放接口、`GET /models`、响应头特征、端点类型推断 | **0 次** | 端点类型；**谎称"官方 API 直连"当场戳穿** | 否 |
+| **L0b 能力探测** | 参数接受度矩阵 14 项（effort 8 档 + reasoning.mode 2 + logprobs/seed/n/temperature）、juice 探针、注入量截距 | ~24 次 | 端点类型；透不透传 effort | 否 |
+| **L1 快筛** | 3 格 × 5 次，与本地参照比 `S_screen`，对离线标定的 `T_pass`/`T_fail` | **15 次** | 「还是不是它」（绿 / 需精确确认） | 是（读本地 `reference/`） |
+| **L2 精确校准** | H / S / D（对照校准法）+ 偏置校正 + bootstrap 置信区间 | 180 次/端点 | **模型身份**（最硬） | 是 |
+| **reasoning 巡检**（旁挂） | 生成式难题六档标定 + 日常比对，见下 | ~36 次 | **reasoning 降档** | 否（需 `probes/calibration.json`） |
 
-日常只跑 0+1；换供应商或起疑时才上第 2 层。
+日常只跑 L0+L1；换供应商或起疑时才上 L2。降档嫌疑走 reasoning 巡检。
+
+> ⚠️ **术语对照**（下面「实测结论存档」是当时的记录，**不改写**，但两套编号别混着读）：
+> 历史行文里的「第 1 层 = 推理题 / 第 2 层 = 指纹 / 第 0 层 = 画像 / 第 3 层 = 漂移监控」，
+> 对应现在的「reasoning 巡检 / L2 / L0 / 定期重跑 L1+巡检」。
+> 重构方案见 [`docs/plans/2026-08-11-relay-picker-plan.md`](docs/plans/2026-08-11-relay-picker-plan.md)。
 
 ## 第 1 层：动态推理题库（`src/probes/reasoning.js`）
 
@@ -83,10 +89,10 @@ Language Models from Single-Token Output Distributions*（arXiv:2607.10252）。
 
 ```bash
 # 一次性：在已知正版端点上校准（哪个题型在什么难度有区分度）
-node scripts/calibrate-probes.js --endpoint <正版> --key <k> --n 8 --reps 3
+node scripts/calibrate-probes.js --endpoint <正版端点 id> --n 8 --reps 3
 
 # 日常：查某端点有没有偷偷降档（题目每次重新生成，种子取自时钟）
-node scripts/quick-check.js --endpoint <url> --key <k> [--effort high] [--n 36]
+node scripts/quick-check.js --endpoint <id> [--effort high] [--n 36]
 ```
 
 **沉淀下来的是「家族级区分度」，不是题目**。`probes/calibration.json` 存的是各题型在两档下的
@@ -134,35 +140,44 @@ node scripts/quick-check.js --endpoint <url> --key <k> [--effort high] [--n 36]
 
 ## 技术栈
 
-Node.js ≥ 20（实测 22.14）。**零运行时依赖**，跟上游一致。原生 `fetch` + `node:test`。
+Node.js ≥ 24（实测 v26.3.0；`package.json` 的 `engines.node` 即 `">=24"`）。
+下界取 24 的理由：`node:sqlite`（里程碑 2 的存储层）在 22.x 需要 `--experimental-sqlite` flag，
+而本项目不给代码加 flag（部署时 Docker / CLI / 测试三处都要带，是三个新的失败点）。
+**`src/` 与 `scripts/` 零运行时依赖**（golden test 覆盖的正确性承重部分，跟上游一致）；
+**`ui/`（里程碑 2）允许引入依赖，引入时须在本节登记**。当前全项目依赖数为 0。
+原生 `fetch` + `node:test`。
 不引入统计库 —— JSD / ROC / EER 自己实现，正确性由 golden test 保证。
 
 ## 命令
 
+🔴 **端点与 key 的传法**：候选端点写在 `config/endpoints.json`（提交进 git，**绝不含 key**），
+每个端点用 `auth_env` 指名一个环境变量，key 放 `.env`（gitignored）。
+所有 CLI 一律 `--endpoint <id>`，**不再传 URL 和 `--key`**。
+解析由 `src/lib/config.js` 统一负责，各脚本不得自己读配置文件或拼环境变量名。
+
 ```bash
 npm test                 # 全部测试
 npm run test:golden      # 只跑 golden test（复现论文数字，最重要）
-npm run fetch-data       # 从 Zenodo 拉论文数据集+代码到 data/upstream/（gitignored，下载~52MB/解压~500MB）
+npm run fetch-data       # 从 Zenodo 拉论文数据集+代码到 data/upstream/（gitignored，~52MB/解压~500MB）
+npm run verify-data      # 只校验数据完整性，不下载；缺什么列什么，缺失时退出码 1
 
-# 【主用途】验一个新中转，只花新中转的额度，正版参照读本地 reference/
-node scripts/verify-relay.js --endpoint https://xxx/v1 --key sk-xxx \
-  [--subject gpt-5.6-sol] [--control gpt-5.4] [--reps 30]
+# 分层协议，成本逐层放大
+node scripts/profile.js      --endpoint <id>              # L0 画像（L0a 0 次 + L0b ~24 次）
+node scripts/screen.js       --endpoint <id>              # L1 快筛（15 次）
+node scripts/verify-relay.js --endpoint <id> [--reps 15]  # L2 精确校准（180 次，最硬）
+node scripts/quick-check.js  --endpoint <id> [--effort high] [--n 36]   # reasoning 降档巡检
+npm run compare -- --tier screen|full [--only a,b] [--sort <列名>]      # 横评全部端点
 
-# 单端点采样 + 对论文 176 模型库排名（待验模型需在库里）
-node scripts/probe-endpoint.js --endpoint <url> --key <k> --model <m> [--reps 30] [--full]
-
-# 同端点内多模型互比（检测"多个名字同一后端"）
-node scripts/compare-baselines.js baselines/a.json baselines/b.json ...
-
-# 手工指定四个文件做校准比对
-node scripts/calibrated-compare.js --control-a A --control-b B --subject-a C --subject-b D
+# 运维工具（不进主流程）：单端点采样 + 对论文 176 模型库排名
+node scripts/probe-endpoint.js --endpoint <id> --model <m> [--reps 30] [--full]
 ```
 
 **采集新的正版参照**（换了模型版本、或新增待验模型时）：
 
 ```bash
-node scripts/probe-endpoint.js --endpoint <已知正版端点> --key <k> --model gpt-5.6-sol
-# 然后把 baselines/probe-<model>.json 脱敏（删 endpoint 字段）存进 reference/genuine-<model>.json
+node scripts/probe-endpoint.js --endpoint <已知正版端点 id> --model gpt-5.6-sol
+# 然后把 baselines/probe-<endpoint>-<model>.json 脱敏（删 endpoint 字段）
+# 存进 reference/genuine-<model>.json
 ```
 
 ## Golden Test（本项目的正确性基石）
@@ -181,30 +196,45 @@ node scripts/probe-endpoint.js --endpoint <已知正版端点> --key <k> --model
 ## 目录
 
 ```
+config/
+  endpoints.json        候选端点清单（提交进 git，**不含 key**，key 走 auth_env 指名的环境变量）
+  endpoints.example.json  脱敏示例
+docs/plans/             实施 plan（当前：2026-08-11-relay-picker-plan.md）
 src/
+  contracts.js          契约代码：判定语义八条的唯一事实源（样本分类 / 两个率 / 计数 / 重试校验）
+  lib/config.js         端点配置加载器——**唯一**读 endpoints.json 与取 key 的地方
+  lib/errors.js         UsageError（退出码 2 语义）
   lib/jsonl.js          流式 JSONL 读取（上游文件 ~160MB）
   normalize/index.js    归一化管线（薄封装 vendor 的纯函数）
   stats/                jsd.js / verify.js（ROC·EER）/ distributions.js / divergence.js
-  probe/                runner.js（采样引擎）+ adapters/openai.js
-  probes/               第 1 层：reasoning.js（生成式+求解器）/ knowledge.js（策展）
+                        + noise.js / bootstrap.js / guards.js（阶段 3）
+  probe/                runner.js（采样引擎）+ cells.js（格子选择+阈值标定）
+                        + http/（**唯一出站目录**：chat / responses / L0a 的两个 GET）
+  layers/               l0-profile.js / l1-screen.js / l2-calibrate.js（阶段 4-6）
+  probes/               reasoning.js（生成式+求解器）/ knowledge.js（策展）/ juice.js
 scripts/
   fetch-upstream-data.js    从 Zenodo 拉数据（npm run fetch-data）
   probe-endpoint.js         单端点采样 + 对论文库排名
-  compare-baselines.js      同端点多模型互比
-  calibrated-compare.js     手工四文件校准比对（H/S/D）
-  verify-relay.js           【第 2 层主入口】一条命令验新中转
-  calibrate-probes.js       在正版端点上校准推理题区分度
-  quick-check.js            【第 1 层主入口】查 reasoning 降档
+  compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
+  calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
+  verify-relay.js           【L2 主入口】一条命令验新中转
+  profile.js                【L0 主入口】端点画像（阶段 4）
+  screen.js                 【L1 主入口】快筛（阶段 5）
+  compare.js                【横评主入口】遍历 config 里全部端点（阶段 8）
+  calibrate-probes.js       在正版端点上校准推理题区分度（六档）
+  quick-check.js            【reasoning 巡检主入口】查降档
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
 reference/           正版参照指纹（提交进 git，脱敏无端点URL）
 probes/              knowledge.json（知识题库）+ calibration.json（推理题校准）
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
+var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
 test/golden/         G0-G2；test/probes.test.js 求解器+grader 单测
 ```
 
-**没有 CLI 统一入口 / GUI**（曾设想 `cli.js` / `ui/`，未做）：各脚本单一职责、按需组合，
-加 wrapper 不划算（奥卡姆）。验新中转的标准顺序见「## Runbook」。
+**没有 CLI 统一入口**（曾设想 `cli.js`，未做）：各脚本单一职责、按需组合，加 wrapper 不划算（奥卡姆）。
+横评用 `compare.js` 遍历，那不是 wrapper 而是聚合层。**Web UI 属里程碑 2**，见 plan。
+验新中转的标准顺序见「## Runbook」。
 
 ## 命名约定
 
@@ -217,15 +247,24 @@ test/golden/         G0-G2；test/probes.test.js 求解器+grader 单测
 **前提**：中转是 Codex 系（走 Responses API）。`reference/` 里已有对应模型的正版参照，
 否则先在已知正版端点采一份（见「采集新的正版参照」）。
 
+**第 0 步**：把候选写进 `config/endpoints.json`（`id` / `base_url` / `protocol` / `auth_env`），
+key 写进 `.env` 里 `auth_env` 指名的那个变量。此后只用 `id`。
+
 ```bash
-# 1. 画像（~10 次）——先确认端点类型、是不是谎称官方直连、透不透传 effort
-node scripts/probe-endpoint.js --endpoint <url> --key <k> --model gpt-5.5   # 5.5 在论文库里，能排名
+# 1. 画像（L0a 0 次 + L0b ~24 次）——端点类型、是不是谎称官方直连、透不透传 effort
+node scripts/profile.js --endpoint <id>
 
-# 2. 第 1 层 reasoning 降档（~36 次）——查有没有偷偷降 effort
-node scripts/quick-check.js --endpoint <url> --key <k> --model gpt-5.6-sol
+# 2. 快筛（15 次）——「还是不是原来那个模型」，绿灯就到此为止
+node scripts/screen.js --endpoint <id>
 
-# 3. 第 2 层模型身份（480 次，最贵，起疑或换供应商时才跑）
-node scripts/verify-relay.js --endpoint <url> --key <k>   # 默认 subject=sol control=5.4
+# 3. reasoning 降档（~36 次）——查有没有偷偷降 effort
+node scripts/quick-check.js --endpoint <id>
+
+# 4. 模型身份（180 次，最贵，L1 报警或换供应商时才跑）
+node scripts/verify-relay.js --endpoint <id>   # 默认 subject=sol control=5.4
+
+# 横评多家：一条命令跑完 config 里全部端点
+npm run compare -- --tier screen        # 每端点 41 次；决赛选手再单独跑 --tier full
 ```
 
 判读见各层说明。**第 2 层最硬（模型身份），第 1 层查降档，知识题最弱（见下）。**

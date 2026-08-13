@@ -1,0 +1,14 @@
+{
+  "_comment": "候选端点清单。提交进 git（仓库 private）；绝不放 key —— auth_env 只写环境变量名。新增端点见 endpoints.example.json。",
+  "endpoints": [
+    {
+      "id": "selfhosted",
+      "name": "自建 cliproxyapi 网关",
+      "base_url": "https://selfhosted.example/v1",
+      "protocol": "responses",
+      "auth_env": "LLMFP_API_KEY",
+      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "notes": "供应链已确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点。reference/genuine-*.json 就是在这里采的，是本项目的正版参照端点。"
+    }
+  ]
+}
