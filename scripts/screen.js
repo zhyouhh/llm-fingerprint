@@ -10,7 +10,7 @@ import path from 'node:path';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
-import { createChatProbe } from '../src/probe/http/chat.js';
+import { fingerprintProbeFactory, assertSameProtocol } from '../src/probe/http/fingerprint-probe.js';
 import { screenL1 } from '../src/layers/l1-screen.js';
 import { genuineScreenScores } from '../src/layers/genuine-history.js';
 import { loadEndpoints } from '../src/lib/config.js';
@@ -46,7 +46,10 @@ await runMain(async () => {
   console.log(`screening ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
   console.log(`  reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
 
-  const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
+  // The reference dictates the protocol — it is the fixed side of the comparison.
+  const fpProtocol = assertSameProtocol(refSubject.fingerprint_protocol, refSubject.fingerprint_protocol ?? 'chat');
+  console.log(`  fingerprint protocol: ${fpProtocol} (from the reference)`);
+  const probe = fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey });
   const genuine = loadEndpoints().find((e) => e.genuine);
   const genuineScores = genuine
     ? genuineScreenScores({ endpointId: genuine.id, model: subject, referenceVersion: refSubject.collected_utc })

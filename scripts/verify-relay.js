@@ -17,7 +17,7 @@ import path from 'node:path';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
-import { createChatProbe } from '../src/probe/http/chat.js';
+import { fingerprintProbeFactory, assertSameProtocol } from '../src/probe/http/fingerprint-probe.js';
 import { calibrateL2, CONSISTENT_RATIO, SUSPECT_RATIO } from '../src/layers/l2-calibrate.js';
 import { writeResultFile } from '../src/layers/result-file.js';
 import { VERDICT } from '../src/contracts.js';
@@ -51,8 +51,12 @@ await runMain(async () => {
   console.log(`verifying ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
   console.log(`  control ${control}   reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
 
+  // Both references must agree with each other before either is compared to anything.
+  const fpProtocol = assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
+  console.log(`  fingerprint protocol: ${fpProtocol} (from the references)`);
+
   const out = await calibrateL2({
-    probe: createChatProbe({ baseUrl: endpoint.base_url, apiKey }),
+    probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
     subject, control, refSubject, refControl,
     onProgress: ({ done, total, model }) => process.stdout.write(`\r  ${model} ${done}/${total}   `),
   });

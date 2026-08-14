@@ -16,7 +16,7 @@ import path from 'node:path';
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
-import { createChatProbe } from '../src/probe/http/chat.js';
+import { fingerprintProbeFactory, FINGERPRINT_PROTOCOLS } from '../src/probe/http/fingerprint-probe.js';
 import { runBattery, QUICK_CELLS } from '../src/probe/runner.js';
 import { rates } from '../src/contracts.js';
 import { selectCells } from '../src/probe/cells.js';
@@ -30,12 +30,20 @@ const USAGE = `node scripts/refresh-reference.js --endpoint <id> --model M [--ce
   --model M        模型（默认取该端点的 models.subject）
   --cells l1       只重采 L1 用的三格（90 次，最省）
   --cells all      重采全部 8 格（240 次）
-  --reps N         每格次数（默认 30，与既有参照同口径）`;
+  --reps N         每格次数（默认 30，与既有参照同口径）
+  --fp-protocol P  指纹层协议: chat（默认，论文口径）| responses（官方 API 唯一可行的）
+
+⚠️ 两种协议的分布不同，参照与待测必须用同一种。文件会记下它，比较时会校验。`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
 const model = args.model ?? endpoint.models.subject;
 const reps = Number(args.reps ?? 30);
 const which = args.cells === true ? 'l1' : (args.cells ?? 'l1');
+const fpProtocol = args['fp-protocol'] === true ? 'chat' : (args['fp-protocol'] ?? 'chat');
+if (!FINGERPRINT_PROTOCOLS[fpProtocol]) {
+  console.error(`--fp-protocol takes chat or responses, got ${fpProtocol}`);
+  process.exit(2);
+}
 
 await runMain(async () => {
   const refPath = path.join(ROOT, 'reference', `genuine-${model}.json`);
@@ -53,10 +61,11 @@ await runMain(async () => {
 
   console.log(`refreshing reference for ${model} @ ${endpoint.id}`);
   console.log(`  ${cells.length} cells x ${reps} = ${cells.length * reps} logical probes`);
-  console.log(`  cells: ${cells.map((c) => `${c.task_id}|${c.lang}`).join(', ')}\n`);
+  console.log(`  cells: ${cells.map((c) => `${c.task_id}|${c.lang}`).join(', ')}`);
+  console.log(`  fingerprint protocol: ${fpProtocol} — ${FINGERPRINT_PROTOCOLS[fpProtocol].note}\n`);
 
   const { samples, counters, reasoningRate } = await runBattery({
-    probe: createChatProbe({ baseUrl: endpoint.base_url, apiKey }),
+    probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
     model, cells, reps, role: 'subject',
     // 🔴 Matches how the existing reference was built, and is now recorded in the file
     // so the next comparison cannot get it wrong by accident.
@@ -121,6 +130,10 @@ await runMain(async () => {
     // 🔴 The setting this file was normalised under. Its absence is what let a mismatch
     // go unnoticed until someone read the raw answers by hand.
     normalisation: { apply_reasoning_trace: false },
+    // 🔴 Part of "the same way". The identical question over the two wires produces
+    // different distributions, so a reference is only usable by runs on its own protocol.
+    fingerprint_protocol: fpProtocol,
+    fingerprint_params: FINGERPRINT_PROTOCOLS[fpProtocol].params,
     battery: which, reps,
     cells: Object.keys(fingerprint),
     reasoning_rate: reasoningRate,
