@@ -7,8 +7,12 @@
       "base_url": "https://selfhosted.example/v1",
       "protocol": "responses",
       "auth_env": "LLMFP_API_KEY",
-      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
-      "notes": "供应链已确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点。reference/genuine-*.json 就是在这里采的，是本项目的正版参照端点。"
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
+      "notes": "供应链已确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点。reference/genuine-*.json 就是在这里采的，是本项目的正版参照端点。",
+      "genuine": true
     },
     {
       "id": "relay-A",
@@ -16,7 +20,10 @@
       "base_url": "https://www.relay-A/v1",
       "protocol": "responses",
       "auth_env": "RELAY_A_API_KEY",
-      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
       "notes": "2026-07 实测：跑在 One API / New API 框架上（x-oneapi-request-id）；会轮换账号（~70% 未注入 / ~30% 注入 4400-6600 token）。当时未发现掺假迹象。"
     },
     {
@@ -25,7 +32,10 @@
       "base_url": "https://relay-B/v1",
       "protocol": "responses",
       "auth_env": "RELAY_B_API_KEY",
-      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
       "notes": "新候选，未画像。"
     },
     {
@@ -34,7 +44,10 @@
       "base_url": "https://www.relay-C/v1",
       "protocol": "responses",
       "auth_env": "RELAY_C_API_KEY",
-      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
       "notes": "新候选，未画像。"
     }
   ]

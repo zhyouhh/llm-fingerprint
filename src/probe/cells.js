@@ -161,3 +161,73 @@ export function calibrateL1Thresholds(refSubject, refControl, selection,
   }
   return { t_pass, t_fail, usable: true };
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * Empirical T_pass — measured, not simulated.
+ *
+ * 🔴 Why the simulation is not enough, learned the hard way:
+ *
+ * The resampling calibration draws from the reference POOL, so it can only ever
+ * produce answers the pool already contains. Refreshing the reference made two of the
+ * three cells perfectly deterministic ({47: 1.0} from thirty identical draws), the
+ * simulated genuine spread collapsed with them, and T_pass tightened from 0.080 to
+ * 0.0178 — which happens to be exactly the score of a flawless screen. Five live runs
+ * against the KNOWN-GENUINE endpoint landed at 0.0056 / 0.0178 / 0.0178 / 0.0416 /
+ * 0.0544: two of five above the bar. A 40% false-negative rate on the endpoint the
+ * reference was collected from.
+ *
+ * The gap is structural. A reference saying {47: 1.0} assigns probability zero to
+ * everything else, and JSD punishes a zero hard — one unusual answer in five samples
+ * costs that cell 0.108. The pool cannot simulate an answer it does not contain, so the
+ * simulation is blind to precisely the event that matters.
+ *
+ * So T_pass takes the LARGER of the simulated p99 and a bound derived from live genuine
+ * screens. Simulation alone under-estimates; live runs alone are too few to trust a
+ * percentile from. Both, and take the wider.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Below this many live screens, a percentile is not meaningful — pad the max instead. */
+export const EMPIRICAL_MIN_RUNS = 20;
+/** Headroom on the observed maximum while the sample is small. */
+export const EMPIRICAL_MARGIN = 1.3;
+
+/**
+ * @param {number[]} observed  S_screen from live runs against a known-genuine endpoint
+ * @returns {{t_pass: number|null, basis: string, n: number}}
+ */
+export function empiricalTPass(observed = []) {
+  const values = observed.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  if (!values.length) return { t_pass: null, basis: 'no live genuine screens recorded', n: 0 };
+  if (values.length >= EMPIRICAL_MIN_RUNS) {
+    return { t_pass: percentile(values, 0.99), basis: `p99 of ${values.length} live genuine screens`, n: values.length };
+  }
+  return {
+    t_pass: values.at(-1) * EMPIRICAL_MARGIN,
+    // Named provisional so nobody reads a padded maximum as a calibrated percentile.
+    basis: `provisional: max of ${values.length} live genuine screens × ${EMPIRICAL_MARGIN} ` +
+           `(needs ${EMPIRICAL_MIN_RUNS} for a percentile)`,
+    n: values.length,
+  };
+}
+
+/**
+ * Combine both calibrations. The simulated bound stays in play because with few live
+ * runs it can still be the wider of the two.
+ */
+export function combineThresholds(simulated, observed = []) {
+  if (!simulated.usable) return simulated;
+  const emp = empiricalTPass(observed);
+  if (emp.t_pass == null) return { ...simulated, t_pass_basis: 'simulation only — no live genuine screens yet' };
+  const t_pass = Math.max(simulated.t_pass, emp.t_pass);
+  if (!(t_pass < simulated.t_fail)) {
+    return { ...simulated, t_pass: null, t_fail: null, usable: false,
+      reason: `the genuine spread (${emp.t_pass.toFixed(4)}) reaches the substitution threshold ` +
+              `(${simulated.t_fail.toFixed(4)}) — this cell set cannot separate the two` };
+  }
+  return {
+    ...simulated, t_pass,
+    t_pass_basis: t_pass === emp.t_pass ? emp.basis : `simulated p99 (wider than ${emp.basis})`,
+    t_pass_simulated: simulated.t_pass,
+    t_pass_empirical: emp.t_pass,
+  };
+}

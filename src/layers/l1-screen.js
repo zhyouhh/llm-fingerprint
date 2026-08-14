@@ -13,7 +13,7 @@ import {
 } from '../contracts.js';
 import { jsd } from '../stats/jsd.js';
 import { applyGates, usableCells } from '../stats/guards.js';
-import { selectCells, calibrateL1Thresholds } from '../probe/cells.js';
+import { selectCells, calibrateL1Thresholds, combineThresholds } from '../probe/cells.js';
 import { runBattery } from '../probe/runner.js';
 import { noiseFloor, validAnswersByCell } from '../stats/noise.js';
 
@@ -99,9 +99,12 @@ export function evaluateL1({ samples, refSubject, selection, calibration }) {
  *
  * @returns {Promise<object>} a collection envelope whose `result` is the L1 result
  */
-export async function screenL1({ probe, model, refSubject, refControl, onProgress }) {
+export async function screenL1({ probe, model, refSubject, refControl, genuineScores = [], onProgress }) {
   const selection = selectCells(refSubject, refControl, { tier: 'l1' });
-  const calibration = calibrateL1Thresholds(refSubject, refControl, selection);
+  // Simulated p99, widened by what the genuine endpoint actually scores. See
+  // combineThresholds for why the simulation alone is not enough.
+  const calibration = combineThresholds(
+    calibrateL1Thresholds(refSubject, refControl, selection), genuineScores);
 
   const { samples, counters, reasoningRate } = await runBattery({
     probe, model, cells: selection.cells, reps: selection.repsPerCell, role: 'subject', onProgress,

@@ -11,7 +11,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { normalizeRecords } from '../src/normalize/index.js';
 import { SAMPLE_KIND, classifySample, makeSample, VERDICT } from '../src/contracts.js';
-import { selectCells, calibrateL1Thresholds } from '../src/probe/cells.js';
+import { selectCells, calibrateL1Thresholds, combineThresholds } from '../src/probe/cells.js';
+import { genuineScreenScores } from '../src/layers/genuine-history.js';
+import { loadEndpoints } from '../src/lib/config.js';
+
+const GENUINE = loadEndpoints().find((e) => e.genuine);
 import { evaluateL1 } from '../src/layers/l1-screen.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -37,7 +41,9 @@ for (const [id, file] of latest) {
   const refControl = load(control);
 
   const selection = selectCells(refSubject, refControl, { tier: 'l1' });
-  const calibration = calibrateL1Thresholds(refSubject, refControl, selection);
+  const calibration = combineThresholds(
+    calibrateL1Thresholds(refSubject, refControl, selection),
+    GENUINE ? genuineScreenScores({ endpointId: GENUINE.id, model: subject, referenceVersion: refSubject.collected_utc }) : []);
 
   // Re-normalise from the stored raw text with the corrected pass.
   const normalised = normalizeRecords(j.samples, { applyReasoningTrace: false });
@@ -61,6 +67,7 @@ console.log(`\nT_pass ${calibrationHint()}`);
 function calibrationHint() {
   const refSubject = load('gpt-5.6-sol'); const refControl = load('gpt-5.4');
   const sel = selectCells(refSubject, refControl, { tier: 'l1' });
-  const cal = calibrateL1Thresholds(refSubject, refControl, sel);
-  return `${cal.t_pass.toFixed(6)}   T_fail ${cal.t_fail.toFixed(6)}`;
+  const cal = combineThresholds(calibrateL1Thresholds(refSubject, refControl, sel),
+    GENUINE ? genuineScreenScores({ endpointId: GENUINE.id, model: 'gpt-5.6-sol', referenceVersion: refSubject.collected_utc }) : []);
+  return `${cal.t_pass.toFixed(6)} (${cal.t_pass_basis})   T_fail ${cal.t_fail.toFixed(6)}`;
 }

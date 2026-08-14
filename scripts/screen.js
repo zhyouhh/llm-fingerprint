@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { createChatProbe } from '../src/probe/http/chat.js';
 import { screenL1 } from '../src/layers/l1-screen.js';
+import { genuineScreenScores } from '../src/layers/genuine-history.js';
+import { loadEndpoints } from '../src/lib/config.js';
 import { writeResultFile } from '../src/layers/result-file.js';
 import { VERDICT } from '../src/contracts.js';
 
@@ -45,8 +47,14 @@ await runMain(async () => {
   console.log(`  reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
 
   const probe = createChatProbe({ baseUrl: endpoint.base_url, apiKey });
+  const genuine = loadEndpoints().find((e) => e.genuine);
+  const genuineScores = genuine
+    ? genuineScreenScores({ endpointId: genuine.id, model: subject, referenceVersion: refSubject.collected_utc })
+    : [];
+  if (genuineScores.length) console.log(`  T_pass widened by ${genuineScores.length} live screens of ${genuine.id}`);
+
   const out = await screenL1({
-    probe, model: subject, refSubject, refControl,
+    probe, model: subject, refSubject, refControl, genuineScores,
     onProgress: ({ done, total }) => process.stdout.write(`\r  ${done}/${total}   `),
   });
   const r = out.result;

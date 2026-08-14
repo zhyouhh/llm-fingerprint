@@ -85,6 +85,9 @@ function normalise(ep) {
     auth_env: ep.auth_env,
     models: Object.freeze({ subject: ep.models?.subject ?? null, control: ep.models?.control ?? null }),
     notes: ep.notes ?? '',
+    // Genuineness established OUTSIDE this tool (supply chain), which is what lets this
+    // endpoint's live screens calibrate the threshold rather than be judged by it.
+    genuine: ep.genuine === true,
   });
 }
 
