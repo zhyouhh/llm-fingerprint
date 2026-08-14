@@ -45,13 +45,27 @@ Language Models from Single-Token Output Distributions*（arXiv:2607.10252）。
 |---|---|---|
 | **H** | 对照模型在 参照端点 vs 待测端点 的平均 JSD | 纯外壳差异（模型确定相同） |
 | **S** | 待验模型在 参照端点 vs 待测端点 的平均 JSD | 待判定 |
-| **D** | 待测端点上 待验模型 vs 对照模型 的平均 JSD | 真实模型差异的尺度 |
+| **D** | 待验模型 vs 对照模型 的平均 JSD（采对照时在待测端点上算，`--no-control` 时从两份参照算） | 真实模型差异的尺度 |
 
-**判据**（看相对关系，不看绝对值）：
+**判据**（看相对关系，不看绝对值。**两个方向都要求整个区间越线**）：
 
-- `S ≤ 1.5 × H` → **与同一模型一致**（外壳足以解释全部差异）
-- `S ≥ 0.7 × D` → **疑似替换**
+- `S/H` 的 90% 区间**整体** < 1.5 → **与同一模型一致**（外壳足以解释全部差异）
+- `S/D` 的 90% 区间**整体** ≥ 0.7 → **疑似替换**
 - 之间 → 不确定，加格子或加采样
+
+🔴 **对称性是硬要求，不是洁癖**。曾经只有 consistent 要求区间、suspect 看点估计就定罪——
+对一个「冤枉诚实中转」代价最高的工具，这个方向反了。实测代价：同一端点相隔一小时两次
+`S/D` = 1.04 与 0.64，被写成「suspect」和「inconclusive」，**差一个样本**。
+
+🔴 **分母有下限 `max(H_c, 噪声地板)`**。H_c 低于噪声地板不是「没测出东西」，恰恰是对照模型
+能给出的**最好结果**（两端无法区分 → 外壳无影响）。塌掉的是比值不是证据，所以改成
+「外壳与测量噪声，取更宽松的那个来解释这个差距」。旧代码在这种情况下直接放弃整轮，
+把 relay-C 的 `S_c/D_c = 0.07` 当作不可判定丢掉了。
+
+**精度来自格子数，不是采样数**：区间是对**格子**做 cluster bootstrap，6 个格子无论每格采多少
+次都是粗的、重尾的。`--cells full` 采论文 paper-1 全部 40 格（10 任务 × 4 语言），
+官方 responses 参照实测得到 **29 个活格**（死格 10 个：`num10-random` 全语言、
+`color-favorite`、`num-favorite` 几个——待验与对照答案相同，本来就没鉴别力）。
 
 ## 🔴 指纹层的两条协议——不可混用
 
@@ -144,7 +158,7 @@ node scripts/quick-check.js --endpoint <id> [--effort high] [--n 36]
 | 来源 | 内容 | 何时用 | 保质期 |
 |---|---|---|---|
 | `data/upstream/` 论文库 | 176 模型 × 40 格，2026-07-06 快照 | 待验模型在库里时可直接排名 | 随模型更新过期 |
-| `reference/genuine-*.json` | **本项目自采的正版参照** | 库里没有的新模型（如 gpt-5.6-sol） | 见下 |
+| `reference/<protocol>/genuine-*.json` | **本项目自采的正版参照** | 库里没有的新模型（如 gpt-5.6-sol） | 见下 |
 
 `reference/` 是**一次性投入、可反复使用**的资产：以后测任何新中转，只花新中转的额度，
 参照直接读本地。**模型版本更新后需重采**（厂商换了权重，旧参照就不代表正版了）。
@@ -181,8 +195,9 @@ npm run verify-data      # 只校验数据完整性，不下载；缺什么列�
 
 # 分层协议，成本逐层放大
 node scripts/profile.js      --endpoint <id>              # L0 画像（L0a 0 次 + L0b ~24 次）
-node scripts/screen.js       --endpoint <id>              # L1 快筛（15 次）
-node scripts/verify-relay.js --endpoint <id> [--reps 15]  # L2 精确校准（180 次，最硬）
+node scripts/screen.js       --endpoint <id> [--fp-protocol chat|responses]   # L1 快筛（15 次）
+node scripts/verify-relay.js --endpoint <id> [--fp-protocol P] [--no-control]  # L2 精确校准（最硬）
+   # L2 探针数 = 活格数 × 15 × (采对照? 2 : 1)。29 活格：带对照 870，--no-control 435
 node scripts/quick-check.js  --endpoint <id> [--effort high] [--n 36]   # reasoning 降档巡检
 npm run compare -- --tier screen|full [--only a,b] [--sort <列名>]      # 横评全部端点
 
@@ -193,7 +208,9 @@ node scripts/rejudge.js
 
 # 采 / 刷新正版参照（只能在已知正版端点上跑）
 node scripts/refresh-reference.js --endpoint <正版 id> --model <m> \
-  [--cells l1|all] [--fp-protocol chat|responses]
+  [--cells l1|all|full] [--fp-protocol chat|responses]
+  # l1=3 格 90 次 / all=快筛 8 格 240 次 / full=论文全部 40 格 1200 次（L2 精度靠这个）
+  # 🔴 只能在 config 里标了 "genuine": true 的端点上跑，代码会拦
 
 # 运维工具（不进主流程）：单端点采样 + 对论文 176 模型库排名
 node scripts/probe-endpoint.js --endpoint <id> --model <m> [--reps 30] [--full]
@@ -231,6 +248,8 @@ src/
   contracts.js          🔴 契约代码：判定语义八条的唯一事实源（样本分类 / 两个率 / 两个计数
                         / 重试校验 / 采集信封 / L1·L2 产物）。**所有层 import 它，不许自带字段副本**
   lib/config.js         端点配置加载器——**唯一**读 endpoints.json 与取 key 的地方
+  lib/reference-store.js 🔴 参照按 **(model, protocol)** 寻址——**唯一**拼参照路径的地方。
+                        协议进目录名而非文件名，局部刷新在结构上就不可能跨线路继承格子
   lib/cli.js            共享 CLI：参数解析、--help（退出 0）、端点解析、退出码语义
   lib/errors.js         UsageError（退出码 2）
   lib/rng.js            mulberry32 + 有放回抽样 + 经验分布 + nearest-rank 分位数（确定性）
@@ -254,7 +273,7 @@ src/
     l0-profile.js       L0a 零请求画像 + L0b 能力探测（接受度四态）
     l1-screen.js        L1 快筛：`evaluateL1`（纯函数）+ `screenL1`（采集）
     l2-calibrate.js     L2 校准：H/S/D + 偏置校正 + bootstrap 区间 + H_c 定义域守卫
-    rejudge.js          🔴 按**当前**口径重判存量结果文件（0 请求）
+    rejudge.js          🔴 按**当前**口径重判存量结果文件（0 请求）——`rejudgeL1` + `rejudgeL2`
     result-file.js      结果文件写入 + L0a/L0b 合并（两个计数求和）
     genuine-history.js  从结果文件收集正版端点实测 S（用于实测标定 T_pass）
     compare-table.js    横评表：L2 优先于 L1、排序序、逐层计数求和
@@ -266,21 +285,23 @@ scripts/
   verify-relay.js           【L2 主入口】校准比对（180 次）
   compare.js                【横评主入口】读 var/runs/ 出表，**不发新请求**
   rejudge.js                【重判】按当前口径重算存量 L1 结果，0 请求
-  refresh-reference.js      【采参照】`--cells l1|all` `--fp-protocol chat|responses`
+  refresh-reference.js      【采参照】`--cells l1|all|full` `--fp-protocol chat|responses`
   probe-endpoint.js         运维：单端点采样 + 对论文 176 模型库排名
   calibrate-probes.js       在正版端点上校准推理题区分度（六档）
   quick-check.js            【reasoning 巡检主入口】查降档
   compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
   calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
-reference/           正版参照指纹（提交进 git，脱敏无端点URL）
+reference/<protocol>/  正版参照指纹（提交进 git，脱敏无端点URL）。`chat/` 采自自建网关，
+                     `responses/` 采自 OpenAI 官方 API（40 格 × 30 次 × 2 模型）
 probes/              knowledge.json（知识题库）+ calibration.json（推理题校准）
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/                14 个 suite / **141 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
-                     runner / l0-profile / l1-screen / cells / noise / guards / bootstrap /
-                     config / golden-guard / fingerprint-protocol / probes
+test/                16 个 suite / **161 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
+                     runner / l0-profile / l1-screen / l2-verdict / cells / noise / guards /
+                     bootstrap / config / golden-guard / fingerprint-protocol /
+                     reference-store / probes
 test/fixtures/       🔴 **冻结快照**：reference/（口径回归测试的输入，与活的 reference/ 解耦）、
                      chat-request-snapshot.json（I-1 字节锚点）、responses-sample.json（真实响应体）
 ```
@@ -314,7 +335,7 @@ node scripts/screen.js --endpoint <id>
 node scripts/quick-check.js --endpoint <id>
 
 # 4. 模型身份（180 次，最贵，L1 报警或换供应商时才跑）
-node scripts/verify-relay.js --endpoint <id>   # 默认 subject=sol control=5.4
+node scripts/verify-relay.js --endpoint <id> --fp-protocol responses --no-control
 
 # 横评多家：一条命令跑完 config 里全部端点
 npm run compare -- --tier screen        # 每端点 41 次；决赛选手再单独跑 --tier full
