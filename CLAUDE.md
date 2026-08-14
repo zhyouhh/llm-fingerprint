@@ -282,6 +282,68 @@ npm run compare -- --tier screen        # 每端点 41 次；决赛选手再单�
 codex-server MCP）。本项目按 task commit 后审，不在 spec 阶段审 —— 统计正确性由
 golden test 保证，比文字 review 硬。
 
+## 实测结论存档（2026-08-14）
+
+### 四家横评（L1 15 次/家 + L2 180 次/家）
+
+| 端点 | 判定 | 距离 | 层 |
+|---|---|---|---|
+| **relay-A** | ✅ consistent | **S/H 0.479**，CI [0.294, 0.845] | L2 |
+| **relay-C** | ✅ consistent | S 0.0178 | L1 |
+| **selfhosted** | ✅ consistent | S 0.0544 | L1（正版基准） |
+| **relay-B** | ⚠️ inconclusive | S/H 1.284，CI [0.476, **2.798**] | L2 |
+
+### 🔴 L2 把 L1 的两个判定都翻掉了——对照校准法的第一次实战验证
+
+| 端点 | L1 说 | L2 说 | 该端点的外壳项 `H_c` |
+|---|---|---|---|
+| relay-A | ⚠️ inconclusive（S=0.175） | ✅ **consistent**（S/H 0.48） | **0.328** |
+| relay-B | 🔴 **suspect**（S=0.763） | ⚠️ inconclusive | 0.151 |
+
+两次同一个原因：**L1 直接比 S，而 S 里混着外壳差异**。relay-A 的 `H_c` = 0.328 意味着
+**同一个 gpt-5.4 在它与自建网关之间就已经差这么多**，L1 把这些全记到了模型头上。
+「跨端点直接比指纹分不开外壳与模型」这句话，现在有两个自己的实测样本。
+
+**读表规则**：L1 的距离**不能**当作模型差异读，它含外壳；只有 L2 的 S/H 去掉了外壳。
+
+### L1 阈值必须用实测标定，模拟标定会误杀正版
+
+参照刷新后两格变成「30 次全同一个答案」，模拟标定（从参照池重抽样）算出的
+T_pass 塌到 **0.0178**——恰好等于「完美采样」的分数。而正版端点 5 次实测是
+**0.0056 / 0.0178 / 0.0178 / 0.0416 / 0.0544**，**5 次里 2 次被自己的参照拒了**。
+
+根因：**重抽样只能抽出池子里已有的答案**。参照说 `{47: 1.0}` 即其他答案概率为零，
+JSD 对零概率惩罚极重（一个异常答案让该格跳到 0.108）——而模拟恰恰造不出那个事件。
+现在 `T_pass = max(模拟 p99, 实测上界)`；不足 20 次时用「实测最大值 × 1.3」并标 provisional。
+
+### 归一化口径必须与比对目标一致（一次静默的整轮作废）
+
+`reference/genuine-*.json` 是**不带** reasoning-trace pass 采的（240 条里 154 条
+`reasoning_len>0` 却全标 `valid`）。新采样路径带了 → 健康端点三分之二样本被打成
+`post_reasoning` → 正版端点判 inconclusive。**不报错，比较直接失效。**
+
+⚠️ **一个曾写错的说法**：`detectReasoningPairs` 的 `n >= 20` 门槛**不管**这件事，
+它只管「字段缺失时的推断」；`emittedTrace` 对任何 `reasoning_len > 0` 直接判定。
+15 个样本的 L1 一跑就触发。
+
+### 端点画像（L0，实测）
+
+| | selfhosted | relay-A | relay-C | relay-B |
+|---|---|---|---|---|
+| 框架 | openai-compatible | **One API/New API** | **One API/New API** | openai-compatible |
+| `/api/status` | 无 | 开放 | 开放 | 无 |
+| 模型数 | 19 | 13 | 8 | 19 |
+| p50 延迟 | 3056ms | **1726ms** | 2088ms | 5810ms |
+
+自建网关实测：effort 接受 none/low/medium/high/xhigh/max，**拒绝 minimal 与 ultra**；
+`mode:standard` 接受、`pro` 拒绝；**logprobs / seed / n / temperature 全拒绝**（订阅逆向网关特征）。
+juice 随档位变（none=8、max=960）。
+
+🔴 **画像的接受度有四种取值，`null` ≠ `false`**：2xx=支持、**4xx=不支持**、
+**5xx/网络失败=`null`（探过但没测出来）**、未探=`not_probed`。
+把 5xx 记成「不支持」会把端点抖动的一分钟冻成永久结论——实测中一次 503 潮曾让画像
+报告「该网关不支持 seed / n / temperature」，而它们只是当时没答上来。
+
 ## 实测结论存档（2026-07-21/22）
 
 ### 已验证的端点
