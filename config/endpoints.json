@@ -11,8 +11,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "🔴 参照来源。身份无需推断——它按定义就是 ground truth，且没有网关外壳，所以 L2 的 H 项能拉开、判据更稳。支持 logprobs（裸 API 特征）。",
-      "genuine": true
+      "notes": "🔴 采不了指纹参照，不要再试：指纹层的请求体带 `reasoning:{enabled:false}`（OpenRouter 扩展，论文数据就是在 OpenRouter 上采的），官方 API 400 Unknown parameter；去掉它并改用 max_completion_tokens 后能通，但推理模型会把 16 token 预算全烧在隐藏推理上，补全为空（valid 0%，实测 240/240）。中转之所以采得到，是因为它们接受那个参数、把推理关掉了。用途：注入量基线（~7 token）、能力对照、将来识别\"转卖真 API key\"型中转。"
     },
     {
       "id": "selfhosted",
@@ -24,7 +23,8 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "订阅逆向网关（ChatGPT OAuth → OpenAI 后端）。供应链已确认，但自 2026-08-14 起参照改从官方 API 采，本端点降为待测对象之一。"
+      "notes": "正版参照来源（供应链确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点）。reference/genuine-*.json 采自这里。⚠️ 它带 ~294 token 外壳，所以对\"外壳与它相似\"的待测端点（如 relay-C，H_c 仅 0.099）校准力弱——这是已知局限，不是实现问题。",
+      "genuine": true
     },
     {
       "id": "relay-A",
