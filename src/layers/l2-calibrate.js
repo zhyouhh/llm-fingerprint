@@ -224,7 +224,7 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
  * Collect both sides and judge. 180 logical probes: 6 live cells × 15 reps × 2 models.
  */
 export async function calibrateL2({ probe, subject, control, refSubject, refControl, fpProtocol,
-                                    sampleControl = true, onProgress }) {
+                                    sampleControl = true, concurrency, onProgress }) {
   // 🔴 Explicit, for the same reason screenL1 demands it: the stored file has to say which
   // wire produced it, or a later reader cannot tell which reference it was ever comparable
   // with.
@@ -236,6 +236,7 @@ export async function calibrateL2({ probe, subject, control, refSubject, refCont
 
   const collect = (model, role) => runBattery({
     probe, model, cells: selection.cells, reps: selection.repsPerCell, role,
+    ...(concurrency ? { concurrency } : {}),
     applyReasoningTrace: false,   // matches how reference/ was collected
     onProgress: onProgress && ((p) => onProgress({ ...p, model })),
   });

@@ -32,12 +32,18 @@ const USAGE = `node scripts/verify-relay.js --endpoint <id> [--subject M] [--con
   --control M      对照模型 —— 必须双方都提供且已独立确认为正版
   --fp-protocol P  chat | responses —— 只有一种协议有参照时可省略
   --no-control     不采对照模型：探针减半，H 视为未测（分母走噪声地板），
-                   D 改从两份参照算。⚠️ 外壳大的线路上不要用——外壳会被算到模型头上`;
+                   D 改从两份参照算。⚠️ 外壳大的端点上不要用——外壳会被算到模型头上
+  --concurrency N  并发请求数（默认 6）。订阅逆向网关账号少，限流时调低`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
 const subject = args.subject ?? endpoint.models.subject;
 const control = args.control ?? endpoint.models.control;
 const sampleControl = args['no-control'] !== true;
+const concurrency = args.concurrency != null && args.concurrency !== true ? Number(args.concurrency) : undefined;
+if (concurrency !== undefined && (!Number.isInteger(concurrency) || concurrency < 1)) {
+  console.error(`--concurrency takes a positive integer, got ${args.concurrency}`);
+  process.exit(2);
+}
 
 await runMain(async () => {
   const fpProtocol = resolveProtocol({
@@ -56,7 +62,7 @@ await runMain(async () => {
 
   const out = await calibrateL2({
     probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
-    subject, control, refSubject, refControl, fpProtocol, sampleControl,
+    subject, control, refSubject, refControl, fpProtocol, sampleControl, concurrency,
     onProgress: ({ done, total, model }) => process.stdout.write(`\r  ${model} ${done}/${total}   `),
   });
   const r = out.result;
