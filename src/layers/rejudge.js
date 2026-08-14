@@ -87,8 +87,14 @@ export function rejudgeL2(file) {
   const samples = restoreSamples(file.samples);
   // The two sides are stored in one array and are told apart by `model` — the same split
   // evaluateL2 needs in order to keep two denominators (判定语义④).
+  //
+  // 🔴 A run collected with --no-control has no control rows, and filtering for them
+  // yields an EMPTY ARRAY — which reads as "the control answered nothing" and drove the
+  // whole run to not_applicable. "Not sampled" has to survive the round trip as null, so
+  // it comes off the meta rather than being inferred from the absence of rows.
+  const sampledControl = file.meta.sampled_control !== false;
   const subjectSamples = samples.filter((s) => s.model === subject);
-  const controlSamples = samples.filter((s) => s.model === control);
+  const controlSamples = sampledControl ? samples.filter((s) => s.model === control) : null;
 
   const selection = {
     cells: file.meta.cells.map((cell) => {

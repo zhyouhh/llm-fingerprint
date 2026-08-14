@@ -241,3 +241,22 @@ test('dropping the control does not silently drop the not-applicable gate', () =
   });
   assert.equal(r.verdict, VERDICT.NOT_APPLICABLE);
 });
+
+test('a no-control run survives the round trip through a result file', async () => {
+  // 🔴 "Not sampled" has to come back as null, not as an empty array. Filtering the stored
+  // rows for the control model yields [] either way, and [] reads as "the control answered
+  // nothing" — which drove every re-judged --no-control run to not_applicable.
+  const { rejudgeL2 } = await import('../src/layers/rejudge.js');
+  const stored = {
+    meta: {
+      tier: 'l2', model: 'gpt-5.6-sol', control: 'gpt-5.4', fingerprint_protocol: 'responses',
+      cells: ['num100-random|en'], reps_per_cell: 15, sampled_control: false,
+    },
+    samples: [],
+  };
+  // Reaching evaluateL2 at all is the point; the references exist on disk for this wire.
+  const out = rejudgeL2(stored);
+  assert.notEqual(out.result.verdict, undefined);
+  assert.equal(out.result.control, null, 'the control side must stay null through the round trip');
+  assert.ok(!/control: valid rate/.test(out.result.reason ?? ''), 'the control gate must not fire on a side that was never sampled');
+});
