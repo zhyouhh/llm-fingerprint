@@ -53,6 +53,24 @@ Language Models from Single-Token Output Distributions*（arXiv:2607.10252）。
 - `S ≥ 0.7 × D` → **疑似替换**
 - 之间 → 不确定，加格子或加采样
 
+## 🔴 指纹层的两条协议——不可混用
+
+同一道题在两条线上**分布不同**（自建网关 `num100-random|en`：chat 下 `47` 恒定，
+Responses + `effort:none` 下 47/57/57）。所以参照与待测**必须同协议**，代码会拦。
+
+| 协议 | 靠什么关推理 | 谁能用 | 何时选它 |
+|---|---|---|---|
+| `chat` | `reasoning:{enabled:false}` | 中转可以，**官方 API 不行** | 默认；与论文 176 模型库同口径 |
+| `responses` | `reasoning:{effort:'none'}` | **五家全通，含官方**（实测 3/3） | 要拿官方 API 当参照时**唯一可行** |
+
+**为什么官方采不了 chat 参照**：`reasoning:{enabled:false}` 是 **OpenRouter 扩展**（论文数据
+就是在 OpenRouter 上采的），官方 400 `Unknown parameter`；去掉它并改用 `max_completion_tokens`
+后能通，但推理模型会把 16 token 预算**全烧在隐藏推理上**，补全为空（实测 240/240 空）。
+中转采得到，正是因为它们接受那个参数、真把推理关了。
+
+**机制**：参照文件记 `fingerprint_protocol`；`screen.js` / `verify-relay.js` **从参照读协议**
+并 `assertSameProtocol`，不匹配直接抛错。没有该字段的老文件按 `chat` 处理（它们本来就是）。
+
 ## 分层协议
 
 | 层 | 内容 | 成本 | 能判定 | 要参照 |
@@ -168,6 +186,15 @@ node scripts/verify-relay.js --endpoint <id> [--reps 15]  # L2 精确校准（18
 node scripts/quick-check.js  --endpoint <id> [--effort high] [--n 36]   # reasoning 降档巡检
 npm run compare -- --tier screen|full [--only a,b] [--sort <列名>]      # 横评全部端点
 
+npm run compare -- --sort latency_p50   # 换排序键；不带则按真实性排
+
+# 0 请求：按**当前**口径重判存量结果（改了阈值 / 参照 / 归一化之后必跑）
+node scripts/rejudge.js
+
+# 采 / 刷新正版参照（只能在已知正版端点上跑）
+node scripts/refresh-reference.js --endpoint <正版 id> --model <m> \
+  [--cells l1|all] [--fp-protocol chat|responses]
+
 # 运维工具（不进主流程）：单端点采样 + 对论文 176 模型库排名
 node scripts/probe-endpoint.js --endpoint <id> --model <m> [--reps 30] [--full]
 ```
@@ -201,35 +228,61 @@ config/
   endpoints.example.json  脱敏示例
 docs/plans/             实施 plan（当前：2026-08-11-relay-picker-plan.md）
 src/
-  contracts.js          契约代码：判定语义八条的唯一事实源（样本分类 / 两个率 / 计数 / 重试校验）
+  contracts.js          🔴 契约代码：判定语义八条的唯一事实源（样本分类 / 两个率 / 两个计数
+                        / 重试校验 / 采集信封 / L1·L2 产物）。**所有层 import 它，不许自带字段副本**
   lib/config.js         端点配置加载器——**唯一**读 endpoints.json 与取 key 的地方
-  lib/errors.js         UsageError（退出码 2 语义）
+  lib/cli.js            共享 CLI：参数解析、--help（退出 0）、端点解析、退出码语义
+  lib/errors.js         UsageError（退出码 2）
+  lib/rng.js            mulberry32 + 有放回抽样 + 经验分布 + nearest-rank 分位数（确定性）
   lib/jsonl.js          流式 JSONL 读取（上游文件 ~160MB）
-  normalize/index.js    归一化管线（薄封装 vendor 的纯函数）
-  stats/                jsd.js / verify.js（ROC·EER）/ distributions.js / divergence.js
-                        + noise.js / bootstrap.js / guards.js（阶段 3）
-  probe/                runner.js（采样引擎）+ cells.js（格子选择+阈值标定）
-                        + http/（**唯一出站目录**：chat / responses / L0a 的两个 GET）
-  layers/               l0-profile.js / l1-screen.js / l2-calibrate.js（阶段 4-6）
+  normalize/index.js    归一化管线；`normalizeRecords(recs, {applyReasoningTrace})` 是内存版
+  stats/
+    jsd.js verify.js distributions.js divergence.js   （不动，golden test 管辖）
+    noise.js            噪声地板（split-half 有放回重抽样）+ 偏置校正
+    bootstrap.js        S/H 比值的 90% 置信区间（对**格子**重抽样）
+    guards.js           逐层守门；`usableCells` 的 minN **无默认值**
+  probe/
+    runner.js           采样引擎（自己不重试；`applyReasoningTrace` 必须显式传）
+    cells.js            格子选择（SNR 排序、剔死格）+ L1 阈值标定（模拟 + 实测合并）
+    http/               🔴 **唯一出站目录（I-4）**
+      transport.js      重试 + 错误分类 + 超时（**非 2xx 不抛，返回值**）
+      chat.js           指纹路径（论文口径，请求体字节冻结）
+      responses.js      Responses 客户端（effort / mode / store:false）
+      fingerprint-probe.js  🔴 指纹层双协议 + **跨协议比较拦截**（见下节）
+      get.js            L0a 的两个 GET
+  layers/
+    l0-profile.js       L0a 零请求画像 + L0b 能力探测（接受度四态）
+    l1-screen.js        L1 快筛：`evaluateL1`（纯函数）+ `screenL1`（采集）
+    l2-calibrate.js     L2 校准：H/S/D + 偏置校正 + bootstrap 区间 + H_c 定义域守卫
+    rejudge.js          🔴 按**当前**口径重判存量结果文件（0 请求）
+    result-file.js      结果文件写入 + L0a/L0b 合并（两个计数求和）
+    genuine-history.js  从结果文件收集正版端点实测 S（用于实测标定 T_pass）
+    compare-table.js    横评表：L2 优先于 L1、排序序、逐层计数求和
   probes/               reasoning.js（生成式+求解器）/ knowledge.js（策展）/ juice.js
 scripts/
-  fetch-upstream-data.js    从 Zenodo 拉数据（npm run fetch-data）
-  probe-endpoint.js         单端点采样 + 对论文库排名
-  compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
-  calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
-  verify-relay.js           【L2 主入口】一条命令验新中转
-  profile.js                【L0 主入口】端点画像（阶段 4）
-  screen.js                 【L1 主入口】快筛（阶段 5）
-  compare.js                【横评主入口】遍历 config 里全部端点（阶段 8）
+  fetch-upstream-data.js    从 Zenodo 拉数据（`--verify` 只校验不下载）
+  profile.js                【L0 主入口】端点画像
+  screen.js                 【L1 主入口】快筛（15 次）
+  verify-relay.js           【L2 主入口】校准比对（180 次）
+  compare.js                【横评主入口】读 var/runs/ 出表，**不发新请求**
+  rejudge.js                【重判】按当前口径重算存量 L1 结果，0 请求
+  refresh-reference.js      【采参照】`--cells l1|all` `--fp-protocol chat|responses`
+  probe-endpoint.js         运维：单端点采样 + 对论文 176 模型库排名
   calibrate-probes.js       在正版端点上校准推理题区分度（六档）
   quick-check.js            【reasoning 巡检主入口】查降档
+  compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
+  calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
 reference/           正版参照指纹（提交进 git，脱敏无端点URL）
 probes/              knowledge.json（知识题库）+ calibration.json（推理题校准）
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/golden/         G0-G2；test/probes.test.js 求解器+grader 单测
+test/                14 个 suite / **141 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
+                     runner / l0-profile / l1-screen / cells / noise / guards / bootstrap /
+                     config / golden-guard / fingerprint-protocol / probes
+test/fixtures/       🔴 **冻结快照**：reference/（口径回归测试的输入，与活的 reference/ 解耦）、
+                     chat-request-snapshot.json（I-1 字节锚点）、responses-sample.json（真实响应体）
 ```
 
 **没有 CLI 统一入口**（曾设想 `cli.js`，未做）：各脚本单一职责、按需组合，加 wrapper 不划算（奥卡姆）。
@@ -462,6 +515,19 @@ Ciudad de la Paz 属国）+ 1 道自适应糖果组合推理题。参数 `max_co
 
 （按时间倒序，新的在上）
 
+- **2026-08-14** 按 plan 实施阶段 0-6、8（reasoning 巡检那层留着没做）。141 测试全绿。
+  四家端点实测横评见「实测结论存档」。**L2 把 L1 的两个判定都翻掉了**，验证了对照校准法的价值。
+
+  🔴 **本轮踩到同一个失效模式三次，都不报错、只是让比较悄悄失去意义**：
+  ① **归一化口径**不匹配（参照不带 reasoning-trace pass，新采样带了）→ 正版端点判 inconclusive；
+  ② 横评表**直读结果文件里存的 verdict**，而那是采集当天的口径算的 → 表和 rejudge 自相矛盾；
+  ③ **指纹层协议**混用（chat vs Responses 分布不同）→ 已加 `assertSameProtocol` 拦截。
+  **三次都靠跑真实数据才暴露，静态读代码一次都看不出来。** 凡是"比较两侧"的地方，
+  两侧是怎么测出来的必须记在数据里并在比较时校验——这是本项目最贵的一条经验。
+
+  其他修正：**L1 阈值必须实测标定**（模拟标定在确定性参照上误杀正版，5 次里 2 次）；
+  L0b 接受度**四态**（5xx ≠ 不支持）；reasoning gap 告警**要报方向**（多≠降档）；
+  口径回归测试改用 `test/fixtures/reference/` 冻结快照（活参照一刷新就红 = 会被静音的测试）。
 - **2026-07-22** 完成对照校准法（H/S/D）并实测：relay-A 的 `gpt-5.6-sol` 判定为正版。
   正版参照落盘 `reference/`（一次性投入，以后测新中转不再消耗参照端的额度）。
   新增 `verify-relay.js` 一条命令完成验证。修正两个方法错误：① `prompt_tokens` 分层最初被
