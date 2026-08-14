@@ -79,12 +79,18 @@ await runMain(async () => {
     if (unknown.length) console.log(`  unknown  (${unknown.length})   ${unknown.join(', ')}  ← 端点当时 5xx/网络失败，非参数结论`);
     if (unasked.length) console.log(`  unasked  (${unasked.length})   ${unasked.join(', ')}`);
 
-    for (const cap of ['top_logprobs', 'seed', 'n']) {
-      if (r.acceptance[cap] === true) {
-        console.log(`  ✱ ${cap} is supported — this looks like a bare API. One logprobs request`);
-        console.log('    verifies the model far more directly than sampling ever can.');
-        break;
-      }
+    // 🔴 This used to read "supported = a bare API, use logprobs instead of sampling".
+    // Measured on the vendor API itself on 2026-08-14: OpenAI REJECTS top_logprobs, seed
+    // and n over Responses — they are /chat/completions parameters, and reasoning models
+    // do not offer logprobs on this wire at all. So accepting them makes an endpoint
+    // LESS like the vendor API, not more; the usual cause is a gateway that swallows
+    // parameters it does not implement. Same class of error as reading a protocol
+    // mismatch for a missing capability.
+    const swallowed = ['top_logprobs', 'seed', 'n'].filter((cap) => r.acceptance[cap] === true);
+    if (swallowed.length) {
+      console.log(`  ✱ accepts ${swallowed.join(', ')} — the vendor API REFUSES these over Responses,`);
+      console.log('    so this is a difference FROM the official API, not evidence of a bare one.');
+      console.log('    Most likely a gateway accepting parameters it does not implement.');
     }
     if (r.juice_by_effort) {
       const readable = Object.entries(r.juice_by_effort).filter(([, v]) => v != null);

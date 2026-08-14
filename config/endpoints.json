@@ -62,6 +62,30 @@
         "control": "gpt-5.4"
       },
       "notes": "✅ 2026-08-14 实测：sol 对官方参照 0.0473，低于噪声地板 0.0833 —— 真货。L2 判 consistent（S/H 区间 [0.10, 1.09] 整体在 1.5 线下）。外壳极小（48 tok/探针）。"
+    },
+    {
+      "id": "relay-D",
+      "name": "relay-D (codex)",
+      "base_url": "https://relay-D/codex/v1",
+      "protocol": "responses",
+      "auth_env": "RELAY_D_API_KEY",
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
+      "notes": "新候选，2026-08-14 加入，未测。"
+    },
+    {
+      "id": "relay-E",
+      "name": "relay-E (relay-E)",
+      "base_url": "https://relay-E/v1",
+      "protocol": "responses",
+      "auth_env": "RELAY_E_API_KEY",
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
+      "notes": "新候选，2026-08-14 加入，未测。"
     }
   ]
 }

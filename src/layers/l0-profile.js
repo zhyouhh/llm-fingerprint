@@ -6,9 +6,16 @@
 // x-oneapi-request-id.
 //
 // L0b costs ~24 probes and answers "what does it accept": which effort levels, which
-// reasoning modes, whether logprobs/seed/n exist at all. That last group is the sharpest
-// cheap signal there is — bare APIs support them, subscription-reversing gateways never
-// do, and where they exist a single logprobs request verifies the model outright.
+// reasoning modes, whether logprobs/seed/n are accepted.
+//
+// 🔴 That last group does NOT mean "bare API", which is what this comment used to claim.
+// Measured against OpenAI directly on 2026-08-14: the vendor API refuses top_logprobs,
+// seed and n over Responses — they belong to /chat/completions, and reasoning models do
+// not expose logprobs on this wire. Accepting them is therefore a difference FROM the
+// vendor, usually a gateway swallowing parameters it does not implement.
+//
+// The signal that DOES separate endpoint types is the injected preamble: ~7 tokens on the
+// vendor API, ~294 on the self-hosted subscription gateway, thousands on some resellers.
 //
 // 🔴 Nothing here gates L1 or L2. Whether /models answers says nothing about whether
 // /chat/completions works: some compatible endpoints serve chat without implementing
