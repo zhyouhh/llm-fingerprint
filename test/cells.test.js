@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { selectCells, DEAD_CELL_SIGNAL } from '../src/probe/cells.js';
-import { L1_LOGICAL_SAMPLES, L2_LOGICAL_SAMPLES_PER_SIDE } from '../src/contracts.js';
+import { L1_LOGICAL_SAMPLES, l2LogicalPerSide } from '../src/contracts.js';
 
 // 🔴 A FROZEN copy, not reference/. These tests pin exact values to lock the
 // calculation pipeline — thresholds are asserted with ===, no tolerance — and
@@ -27,7 +27,10 @@ test('L2 takes every live cell at 15 reps → 90 per side', () => {
   const l2 = selectCells(sol, g54, { tier: 'l2', trials: 100 });
   assert.equal(l2.cells.length, 6);
   assert.equal(l2.repsPerCell, 15);
-  assert.equal(l2.totalReps, L2_LOGICAL_SAMPLES_PER_SIDE);
+  // 🔴 Derived from the selection, never a constant. It WAS a constant — `90 = 6 cells ×
+  // 15 reps` — and the day the battery grew to the paper's full forty every L2 run died
+  // on "435 samples exceed the declared denominator 90".
+  assert.equal(l2.totalReps, l2LogicalPerSide(l2));
 });
 
 test('L1 takes the three cleanest cells at 5 reps → 15', () => {

@@ -8,13 +8,15 @@
 // in phase 2, I-14 in phase 3, I-11/I-16 in phase 4.
 
 import test from 'node:test';
+
+const PER_SIDE = 90;   // the classic six-cell battery, kept as a fixture value only
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
   SAMPLE_KIND, SAMPLE_STATES, KINDS, RATE_BEARING_KINDS, ANSWER_CLASS_TO_STATE,
   classifySample, makeSample, assertOutboundResult, REQUIRED_OUTBOUND_KEYS,
-  rates, l2Rates, gateFromValidRate, L1_LOGICAL_SAMPLES, L2_LOGICAL_SAMPLES_PER_SIDE,
+  rates, l2Rates, gateFromValidRate, L1_LOGICAL_SAMPLES, l2LogicalPerSide,
   countersFromSamples, assertCounters,
   assertRetryConfig, RETRY_ATTEMPTS_MIN, RETRY_ATTEMPTS_MAX,
   buildResponsesBody, RESPONSES_RESERVED_KEYS,
@@ -187,17 +189,19 @@ test('④ the denominator survives failures that never reached the array', () =>
   assert.notEqual(r.valid_rate, 1, 'the declared denominator must win over samples.length');
   assert.equal(gateFromValidRate(r.valid_rate), 'not_applicable');
 
-  // Same shape one level up: L2's per-side denominator is fixed at 90 regardless of how
-  // many samples actually made it back.
-  const l2 = l2Rates({ subjectSamples: repeat('valid', 5), controlSamples: repeat('valid', 5) });
-  assert.equal(l2.subject.valid_rate, 5 / L2_LOGICAL_SAMPLES_PER_SIDE);
+  // Same shape one level up: L2's per-side denominator is whatever the selection planned,
+  // regardless of how many samples actually made it back.
+  const l2 = l2Rates({
+    subjectSamples: repeat('valid', 5), controlSamples: repeat('valid', 5), logicalPerSide: PER_SIDE,
+  });
+  assert.equal(l2.subject.valid_rate, 5 / PER_SIDE);
   assert.equal(gateFromValidRate(l2.subject.valid_rate), 'not_applicable');
 });
 
 test('④ L2 keeps the two sides apart — there is no merged 180 anywhere', () => {
-  const subjectSamples = repeat('valid', L2_LOGICAL_SAMPLES_PER_SIDE);
-  const controlSamples = repeat('transport_failure', L2_LOGICAL_SAMPLES_PER_SIDE);
-  const r = l2Rates({ subjectSamples, controlSamples });
+  const subjectSamples = repeat('valid', PER_SIDE);
+  const controlSamples = repeat('transport_failure', PER_SIDE);
+  const r = l2Rates({ subjectSamples, controlSamples, logicalPerSide: PER_SIDE });
 
   assert.equal(r.subject.valid_rate, 1);
   assert.equal(r.control.valid_rate, 0);
@@ -206,7 +210,7 @@ test('④ L2 keeps the two sides apart — there is no merged 180 anywhere', () 
     'a dead control side must trip the gate on its own');
 
   // Merged, this is 90/180 = 50% — sails past the 20% gate while H and D are garbage.
-  const merged = (r.subject.n_valid + r.control.n_valid) / (2 * L2_LOGICAL_SAMPLES_PER_SIDE);
+  const merged = (r.subject.n_valid + r.control.n_valid) / (2 * PER_SIDE);
   assert.equal(merged, 0.5);
   assert.notEqual(gateFromValidRate(merged), 'not_applicable',
     'this is exactly the mistake the split denominators prevent');

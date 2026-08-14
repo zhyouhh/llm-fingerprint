@@ -220,7 +220,11 @@ export function makeSample({ kind, state, attempts, ...extra }) {
 export const SIDE = Object.freeze({ SUBJECT: 'subject', CONTROL: 'control' });
 
 export const L1_LOGICAL_SAMPLES = 15;          // 3 cells × 5 reps, subject side only
-export const L2_LOGICAL_SAMPLES_PER_SIDE = 90; // 6 cells × 15 reps, per model
+// 🔴 NOT a constant. It was `90 = 6 cells × 15 reps`, frozen from the day the reference
+// held eight cells — and the moment the battery grew to the paper's full forty, every L2
+// run died on "435 samples exceed the declared denominator 90". A denominator that does
+// not follow its own selection is a wrong answer waiting for someone to change the plan.
+export const l2LogicalPerSide = (selection) => selection.cells.length * selection.repsPerCell;
 
 /** Gate thresholds, shared by L1 and L2 (判定规则). */
 export const VALID_RATE_NOT_APPLICABLE = 0.20; // below this the method does not apply
@@ -271,10 +275,15 @@ export function rates(samples, { logicalSamples } = {}) {
  * control 0/90 valid would compute to 50% and sail past the gate while H and D are
  * both garbage.
  */
-export function l2Rates({ subjectSamples, controlSamples }) {
+export function l2Rates({ subjectSamples, controlSamples, logicalPerSide }) {
+  if (!Number.isInteger(logicalPerSide) || logicalPerSide <= 0) {
+    usageError('l2Rates: logicalPerSide is required — derive it from the selection with l2LogicalPerSide');
+  }
   return Object.freeze({
-    subject: rates(subjectSamples, { logicalSamples: L2_LOGICAL_SAMPLES_PER_SIDE }),
-    control: rates(controlSamples, { logicalSamples: L2_LOGICAL_SAMPLES_PER_SIDE }),
+    subject: rates(subjectSamples, { logicalSamples: logicalPerSide }),
+    // A control that was deliberately not sampled has no rate to report; `null` says
+    // "not measured", which is a different statement from a rate of zero.
+    control: controlSamples === null ? null : rates(controlSamples, { logicalSamples: logicalPerSide }),
   });
 }
 
@@ -485,7 +494,9 @@ export function makeL2Result({ verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_
     denominator_basis,
     noise_floor,
     subject: Object.freeze({ ...subject }),   // {valid_rate, response_rate, n_valid, ...}
-    control: Object.freeze({ ...control }),
+    // null when the control was deliberately not sampled — "not measured", which is a
+    // different claim from "measured and came back zero".
+    control: control === null ? null : Object.freeze({ ...control }),
     low_confidence, live_cells,
     // 🔴 These three were being computed and then dropped on the floor: makeL2Result
     // names the fields it keeps, and they were not among them. The degenerate-denominator
@@ -504,10 +515,15 @@ export function assertL2Result(result) {
                  `separately (判定语义④), and a merged number hides a dead control side`);
     }
   }
-  for (const side of ['subject', 'control']) {
-    if (!result[side] || typeof result[side] !== 'object') {
-      usageError(`L2 result is missing the ${side} side`);
-    }
+  if (!result.subject || typeof result.subject !== 'object') {
+    usageError('L2 result is missing the subject side');
+  }
+  // The control side may be null (not sampled), but the key must be PRESENT and
+  // explicitly null — an absent key reads as an oversight, and 判定语义④ exists so that
+  // a missing side is never mistaken for a healthy one.
+  if (!('control' in result)) usageError('L2 result must carry a control key, null if not sampled');
+  if (result.control !== null && typeof result.control !== 'object') {
+    usageError('L2 result: control must be an object or explicitly null');
   }
   return result;
 }

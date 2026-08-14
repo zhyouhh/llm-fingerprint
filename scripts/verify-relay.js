@@ -30,11 +30,14 @@ const USAGE = `node scripts/verify-relay.js --endpoint <id> [--subject M] [--con
   --endpoint <id>  端点 id，见 config/endpoints.json
   --subject M      待验模型（默认取该端点的 models.subject）
   --control M      对照模型 —— 必须双方都提供且已独立确认为正版
-  --fp-protocol P  chat | responses —— 只有一种协议有参照时可省略`;
+  --fp-protocol P  chat | responses —— 只有一种协议有参照时可省略
+  --no-control     不采对照模型：探针减半，H 视为未测（分母走噪声地板），
+                   D 改从两份参照算。⚠️ 外壳大的线路上不要用——外壳会被算到模型头上`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
 const subject = args.subject ?? endpoint.models.subject;
 const control = args.control ?? endpoint.models.control;
+const sampleControl = args['no-control'] !== true;
 
 await runMain(async () => {
   const fpProtocol = resolveProtocol({
@@ -53,7 +56,7 @@ await runMain(async () => {
 
   const out = await calibrateL2({
     probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
-    subject, control, refSubject, refControl, fpProtocol,
+    subject, control, refSubject, refControl, fpProtocol, sampleControl,
     onProgress: ({ done, total, model }) => process.stdout.write(`\r  ${model} ${done}/${total}   `),
   });
   const r = out.result;
@@ -61,20 +64,29 @@ await runMain(async () => {
   console.log(`\n\n  cells used       ${out.meta.cells.join(', ')}`);
   console.log(`  noise floor      ${Number.isFinite(r.noise_floor) ? r.noise_floor.toFixed(4) : '—'}  (subtracted from all three)`);
   console.log('');
-  console.log(`  H  harness       ${fmt(r.h)} → ${fmt(r.h_c)}   ${control} across endpoints, same model both sides`);
+  console.log(sampleControl
+    ? `  H  harness       ${fmt(r.h)} → ${fmt(r.h_c)}   ${control} across endpoints, same model both sides`
+    : `  H  harness       NOT MEASURED — --no-control. Any harness effect lands on the model.`);
   console.log(`  S  subject       ${fmt(r.s)} → ${fmt(r.s_c)}   ${subject} across endpoints — the one being judged`);
-  console.log(`  D  model scale   ${fmt(r.d)} → ${fmt(r.d_c)}   ${subject} vs ${control} on this relay`);
+  console.log(sampleControl
+    ? `  D  model scale   ${fmt(r.d)} → ${fmt(r.d_c)}   ${subject} vs ${control} on this relay`
+    : `  D  model scale   ${fmt(r.d)} → ${fmt(r.d_c)}   ${subject} vs ${control} in the references (not on this relay)`);
   console.log('');
+  console.log(`  denominator      ${r.denominator_basis}`);
   console.log(`  S/H = ${fmt(r.ratio)}   90% CI [${fmt(r.ratio_ci_lo)}, ${fmt(r.ratio_ci_hi)}]`);
-  console.log(`    consistent needs S_c ≤ ${CONSISTENT_RATIO}×H_c AND the CI upper bound below ${CONSISTENT_RATIO}`);
-  console.log(`    suspect     needs S_c ≥ ${SUSPECT_RATIO}×D_c`);
+  console.log(`  S/D = ${fmt(r.sd_ratio)}   90% CI [${fmt(r.sd_ci_lo)}, ${fmt(r.sd_ci_hi)}]`);
+  console.log(`    consistent needs the WHOLE S/H interval below ${CONSISTENT_RATIO}`);
+  console.log(`    suspect     needs the WHOLE S/D interval at or above ${SUSPECT_RATIO}`);
   console.log('');
-  console.log(`  valid rate       subject ${(r.subject.valid_rate * 100).toFixed(1)}%   control ${(r.control.valid_rate * 100).toFixed(1)}%`);
+  console.log(`  valid rate       subject ${(r.subject.valid_rate * 100).toFixed(1)}%   ` +
+              `control ${r.control ? `${(r.control.valid_rate * 100).toFixed(1)}%` : 'not sampled'}`);
   console.log(`  live cells       ${r.live_cells}`);
   if (r.low_confidence) console.log('  ⚠️  low confidence — valid rate between 20% and 80%');
 
   const label = {
-    [VERDICT.CONSISTENT]: `✅ consistent — the harness explains the gap; no model difference is needed`,
+    [VERDICT.CONSISTENT]: sampleControl
+      ? `✅ consistent — the harness explains the gap; no model difference is needed`
+      : `✅ consistent — the gap is inside the measurement noise (harness not measured)`,
     [VERDICT.SUSPECT]: `🔴 suspect — the gap approaches what a genuinely different model produces`,
     [VERDICT.INCONCLUSIVE]: '⚠️  inconclusive',
     [VERDICT.NOT_APPLICABLE]: '✗ not applicable — this endpoint cannot produce single-pass completions',

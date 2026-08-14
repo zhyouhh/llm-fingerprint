@@ -18,7 +18,8 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { fingerprintProbeFactory, FINGERPRINT_PROTOCOLS } from '../src/probe/http/fingerprint-probe.js';
 import { referencePath, loadReference, referenceExists } from '../src/lib/reference-store.js';
-import { runBattery, QUICK_CELLS } from '../src/probe/runner.js';
+import { runBattery, QUICK_CELLS, fullCells } from '../src/probe/runner.js';
+import { loadVendorConfig } from '../src/normalize/index.js';
 import { rates } from '../src/contracts.js';
 import { selectCells } from '../src/probe/cells.js';
 
@@ -30,7 +31,9 @@ const USAGE = `node scripts/refresh-reference.js --endpoint <id> --model M [--ce
   --endpoint <id>  已知正版端点的 id —— 参照只能从正版采
   --model M        模型（默认取该端点的 models.subject）
   --cells l1       只重采 L1 用的三格（90 次，最省）
-  --cells all      重采全部 8 格（240 次）
+  --cells all      重采快筛 8 格（240 次）
+  --cells full     重采论文 paper-1 全部 40 格（1200 次）—— L2 精度靠这个
+                   L2 对「格子」做 bootstrap，6 个格子的区间再怎么加采样也窄不下来
   --reps N         每格次数（默认 30，与既有参照同口径）
   --fp-protocol P  指纹层协议: chat（默认，论文口径）| responses（官方 API 唯一可行的）
 
@@ -50,6 +53,10 @@ if (!endpoint.genuine) {
 const model = args.model ?? endpoint.models.subject;
 const reps = Number(args.reps ?? 30);
 const which = args.cells === true ? 'l1' : (args.cells ?? 'l1');
+if (!['l1', 'all', 'full'].includes(which)) {
+  console.error(`--cells takes l1 | all | full, got ${which}`);
+  process.exit(2);
+}
 const fpProtocol = args['fp-protocol'] === true ? 'chat' : (args['fp-protocol'] ?? 'chat');
 if (!FINGERPRINT_PROTOCOLS[fpProtocol]) {
   console.error(`--fp-protocol takes chat or responses, got ${fpProtocol}`);
@@ -64,7 +71,14 @@ await runMain(async () => {
   const existing = referenceExists(model, fpProtocol) ? loadReference(model, fpProtocol) : null;
 
   let cells;
-  if (which === 'all') {
+  if (which === 'full') {
+    // 🔴 The whole paper-1 battery: 10 tasks × 4 languages. This is what buys PRECISION —
+    // L2 bootstraps over CELLS, so six of them give a coarse, heavy-tailed interval no
+    // matter how many reps each one gets. Going from 6 live cells to ~35 narrows the
+    // interval far more than any extra sampling within the same six would.
+    const { prompts } = loadVendorConfig();
+    cells = fullCells(prompts).map(([task_id, lang]) => ({ task_id, lang, reps }));
+  } else if (which === 'all') {
     cells = QUICK_CELLS.map(([task_id, lang]) => ({ task_id, lang, reps }));
   } else {
     const control = endpoint.models.control;

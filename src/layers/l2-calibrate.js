@@ -14,7 +14,7 @@
 // model.
 
 import {
-  VERDICT, makeCollection, makeL2Result, assertL2Result, l2Rates, L2_LOGICAL_SAMPLES_PER_SIDE,
+  VERDICT, makeCollection, makeL2Result, assertL2Result, l2Rates, l2LogicalPerSide,
 } from '../contracts.js';
 import { jsd } from '../stats/jsd.js';
 import { noiseFloor, correct, validAnswersByCell } from '../stats/noise.js';
@@ -62,19 +62,32 @@ const meanOf = (obj) => {
 /**
  * Judge an already-collected calibration. Pure, zero requests.
  *
+ * `controlSamples: null` means the control model was deliberately not sampled. That halves
+ * the probe budget, and on a wire where the harness turns out to be negligible it costs
+ * almost nothing: H_c measured 0.025 and 0.002 against the official reference — both under
+ * the noise floor, so the denominator was already falling back to the floor anyway.
+ *
+ * 🔴 What it DOES cost: without a control there is no measurement of the harness, so a
+ * gateway that really does distort answers would have that distortion attributed to the
+ * model. That is not hypothetical — on the chat wire H_c was 0.33. The saving is only safe
+ * on a wire where the harness has been measured small, and the result says which it was.
+ *
  * @param {{subjectSamples, controlSamples, refSubject, refControl, selection}} args
  */
 export function evaluateL2({ subjectSamples, controlSamples, refSubject, refControl, selection }) {
-  // 🔴 Two sides, two denominators, two separate gate passes (判定语义④). A merged 180
-  // would let subject-fine/control-dead compute to 50% and sail through while H and D
-  // are both meaningless.
-  const r = l2Rates({ subjectSamples, controlSamples });
+  const sampledControl = controlSamples !== null;
+  // 🔴 Two sides, two denominators, two separate gate passes (判定语义④). One merged
+  // denominator would let subject-fine/control-dead compute to 50% and sail through while
+  // H and D are both meaningless.
+  const r = l2Rates({ subjectSamples, controlSamples, logicalPerSide: l2LogicalPerSide(selection) });
 
   const subjectFp = fingerprintOf(subjectSamples);
-  const controlFp = fingerprintOf(controlSamples);
+  const controlFp = sampledControl ? fingerprintOf(controlSamples) : null;
   const counts = {};
-  for (const cell of new Set([...Object.keys(subjectFp), ...Object.keys(controlFp)])) {
-    counts[cell] = Math.min(subjectFp[cell]?.n ?? 0, controlFp[cell]?.n ?? 0);
+  for (const cell of Object.keys(subjectFp)) {
+    counts[cell] = sampledControl
+      ? Math.min(subjectFp[cell]?.n ?? 0, controlFp[cell]?.n ?? 0)
+      : (subjectFp[cell]?.n ?? 0);
   }
   const { live, dropped } = usableCells(counts, { minN: L2_MIN_N });
 
@@ -86,7 +99,8 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
     noise_floor: NaN, low_confidence: false,
   };
 
-  for (const side of ['subject', 'control']) {
+  const sides = sampledControl ? ['subject', 'control'] : ['subject'];
+  for (const side of sides) {
     const gate = applyGates({
       tier: 'l2', validRate: r[side].valid_rate,
       liveCells: live.length, requestedCells: selection.cells.length,
@@ -96,16 +110,26 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
     }
   }
   const gate = applyGates({
-    tier: 'l2', validRate: Math.min(r.subject.valid_rate, r.control.valid_rate),
+    tier: 'l2',
+    validRate: Math.min(...sides.map((side) => r[side].valid_rate)),
     liveCells: live.length, requestedCells: selection.cells.length,
   });
   if (gate.verdict) {
     return assertL2Result(makeL2Result({ ...base, verdict: gate.verdict, reason: gate.reason }));
   }
 
-  const hPer = perCellJsd(refControl.fingerprint, controlFp, live);
   const sPer = perCellJsd(refSubject.fingerprint, subjectFp, live);
-  const dPer = perCellJsd(subjectFp, controlFp, live);
+  // Without a control on the relay there is no harness measurement: H is treated as zero
+  // and the noise floor carries the denominator (see the ratioCI options below).
+  const hPer = sampledControl
+    ? perCellJsd(refControl.fingerprint, controlFp, live)
+    : Object.fromEntries(live.map((c) => [c, 0]));
+  // 🔴 D is the yardstick for "what a different model looks like". Measured on the relay it
+  // is contaminated by whatever the relay is doing; taken from the two references it is a
+  // property of the model PAIR, measured on ground truth, and costs nothing.
+  const dPer = sampledControl
+    ? perCellJsd(subjectFp, controlFp, live)
+    : perCellJsd(refSubject.fingerprint, refControl.fingerprint, live);
 
   // One floor, measured at this tier's reps. Roughly a third of every raw distance
   // recorded on this project was this artefact.
@@ -126,7 +150,9 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
   // becomes: is the gap explained by the harness, OR is it inside what the measurement can
   // resolve at all — whichever is more generous. Below the floor there is nothing left to
   // explain either way.
-  const denominatorBasis = h_c >= floor ? 'harness' : 'noise floor';
+  const denominatorBasis = !sampledControl
+    ? 'noise floor (control not sampled)'
+    : (h_c >= floor ? 'harness' : 'noise floor');
 
   // Both intervals describe exactly the quantity their test compares — same correction,
   // same floor, one definition (see stats/bootstrap.js). `denomFloor` is where the
@@ -197,7 +223,8 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
 /**
  * Collect both sides and judge. 180 logical probes: 6 live cells × 15 reps × 2 models.
  */
-export async function calibrateL2({ probe, subject, control, refSubject, refControl, fpProtocol, onProgress }) {
+export async function calibrateL2({ probe, subject, control, refSubject, refControl, fpProtocol,
+                                    sampleControl = true, onProgress }) {
   // 🔴 Explicit, for the same reason screenL1 demands it: the stored file has to say which
   // wire produced it, or a later reader cannot tell which reference it was ever comparable
   // with.
@@ -214,18 +241,19 @@ export async function calibrateL2({ probe, subject, control, refSubject, refCont
   });
 
   const subjectRun = await collect(subject, 'subject');
-  const controlRun = await collect(control, 'control');
+  const controlRun = sampleControl ? await collect(control, 'control') : null;
 
   const result = evaluateL2({
-    subjectSamples: subjectRun.samples, controlSamples: controlRun.samples,
+    subjectSamples: subjectRun.samples,
+    controlSamples: controlRun ? controlRun.samples : null,
     refSubject, refControl, selection,
   });
 
-  const samples = [...subjectRun.samples, ...controlRun.samples];
+  const samples = [...subjectRun.samples, ...(controlRun?.samples ?? [])];
   return makeCollection({
     result: {
       ...result,
-      reasoning_rate: { subject: subjectRun.reasoningRate, control: controlRun.reasoningRate },
+      reasoning_rate: { subject: subjectRun.reasoningRate, control: controlRun?.reasoningRate ?? null },
     },
     samples,
     meta: {
@@ -234,7 +262,8 @@ export async function calibrateL2({ probe, subject, control, refSubject, refCont
       reference_version: refSubject.collected_utc ?? 'unknown',
       cells: selection.cells.map((c) => c.cell),
       reps_per_cell: selection.repsPerCell,
-      logical_per_side: L2_LOGICAL_SAMPLES_PER_SIDE,
+      logical_per_side: l2LogicalPerSide(selection),
+      sampled_control: sampleControl,
     },
   });
 }

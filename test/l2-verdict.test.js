@@ -15,7 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { evaluateL2, CONSISTENT_RATIO, SUSPECT_RATIO } from '../src/layers/l2-calibrate.js';
-import { VERDICT, SAMPLE_KIND, L2_LOGICAL_SAMPLES_PER_SIDE } from '../src/contracts.js';
+import { VERDICT, SAMPLE_KIND, l2LogicalPerSide } from '../src/contracts.js';
 
 const CELLS = ['c1|en', 'c2|en', 'c3|en', 'c4|en', 'c5|en', 'c6|en'];
 const REPS = 15;
@@ -88,8 +88,9 @@ test('the two sides carry their own denominators, and 90 is the per-side budget'
     subject: every(...VARIED), control: every(...CTRL),
     refSubject: every(...VARIED), refControl: every(...CTRL),
   });
-  assert.equal(r.subject.logical_samples, L2_LOGICAL_SAMPLES_PER_SIDE);
-  assert.equal(r.control.logical_samples, L2_LOGICAL_SAMPLES_PER_SIDE);
+  // 🔴 The denominator follows THIS selection (6 cells × 15), not a frozen 90.
+  assert.equal(r.subject.logical_samples, l2LogicalPerSide(selection));
+  assert.equal(r.control.logical_samples, CELLS.length * REPS);
   assert.ok(!('valid_rate' in r), 'a merged rate would hide a dead control side');
 });
 
@@ -189,4 +190,54 @@ test('the reported ratio is the ratio the verdict tested', () => {
     `reported ${r.ratio} must BE the tested quantity ${tested}, not merely resemble it`);
   assert.ok(r.ratio_ci_lo <= r.ratio && r.ratio <= r.ratio_ci_hi,
     'the point estimate must lie inside its own interval');
+});
+
+test('the per-side denominator follows the selection, it is not a frozen 90', () => {
+  // 🔴 It WAS frozen — `90 = 6 cells × 15 reps`, written when the reference held eight
+  // cells. Growing the battery to the paper's full forty made every L2 run die on
+  // "435 samples exceed the declared denominator 90".
+  const wide = {
+    cells: [...CELLS, 'c7|en', 'c8|en'].map((cell) => ({ cell, task_id: cell.split('|')[0], lang: 'en' })),
+    repsPerCell: REPS,
+  };
+  assert.equal(l2LogicalPerSide(selection), CELLS.length * REPS);
+  assert.equal(l2LogicalPerSide(wide), (CELLS.length + 2) * REPS);
+  assert.notEqual(l2LogicalPerSide(wide), l2LogicalPerSide(selection));
+});
+
+test('a run with no control says so, and takes its scale from the references', () => {
+  // Half the probes. The control is what measures the harness, so dropping it means the
+  // harness is assumed zero — safe only on a wire where it has been measured small, and
+  // the result has to carry that caveat rather than imply a harness was accounted for.
+  const args = {
+    subject: every(...VARIED), refSubject: every(...VARIED), refControl: every(...CTRL),
+  };
+  const withControl = judge({ ...args, control: every(...CTRL) });
+  const without = evaluateL2({
+    subjectSamples: samplesFor('subj', args.subject),
+    controlSamples: null,
+    refSubject: referenceFor(args.refSubject), refControl: referenceFor(args.refControl),
+    selection,
+  });
+
+  assert.equal(without.control, null, 'not measured is not the same claim as measured zero');
+  assert.ok('control' in without, 'the key must still be there — an absent side reads as an oversight');
+  assert.match(without.denominator_basis, /control not sampled/);
+  assert.ok(Number.isNaN(without.h_c) || without.h_c === 0);
+
+  // D now measures the model PAIR on ground truth rather than on the relay, so it is a
+  // real number even though nothing was sampled for the control.
+  assert.ok(Number.isFinite(without.d) && without.d > 0);
+  assert.equal(without.verdict, VERDICT.CONSISTENT, 'a subject matching its reference still passes');
+  assert.equal(withControl.verdict, VERDICT.CONSISTENT);
+});
+
+test('dropping the control does not silently drop the not-applicable gate', () => {
+  const dead = samplesFor('subj', every('a')).map((s) => ({ ...s, state: 'empty_completion', normalized: null }));
+  const r = evaluateL2({
+    subjectSamples: dead, controlSamples: null,
+    refSubject: referenceFor(every(...VARIED)), refControl: referenceFor(every(...CTRL)),
+    selection,
+  });
+  assert.equal(r.verdict, VERDICT.NOT_APPLICABLE);
 });
