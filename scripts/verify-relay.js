@@ -86,9 +86,18 @@ await runMain(async () => {
   // distribution cannot see it, so it is reported rather than folded into the verdict.
   console.log(`\n  reasoning-trace rate (effort proxy, NOT covered by this verdict):`);
   console.log(`    reference ${pct(refSubject.reasoning_rate)}   relay subject ${pct(r.reasoning_rate?.subject)}`);
-  if (Math.abs((refSubject.reasoning_rate ?? 0) - (r.reasoning_rate?.subject ?? 0)) > 0.25) {
-    console.log('    ⚠️  large gap — this relay may run the model at a lower reasoning effort.');
-    console.log('       Confirm with scripts/quick-check.js; the fingerprint cannot see effort.');
+  // 🔴 Direction matters. The old wording called any large gap "a lower reasoning
+  // effort", which is wrong half the time: a HIGHER trace rate is more reasoning, not
+  // less. Reporting a downgrade when the relay is doing the opposite is worse than
+  // saying nothing, because the reader acts on it.
+  const gap = (r.reasoning_rate?.subject ?? 0) - (refSubject.reasoning_rate ?? 0);
+  if (Math.abs(gap) > 0.25) {
+    console.log(`    ⚠️  ${(Math.abs(gap) * 100).toFixed(0)}pt ${gap < 0 ? 'BELOW' : 'ABOVE'} the reference.`);
+    console.log(gap < 0
+      ? '       Fewer traces than the genuine endpoint — consistent with a lower reasoning effort.'
+      : '       MORE traces than the genuine endpoint — not a downgrade. Could be a higher effort\n' +
+        '       default, a different harness, or a different upstream build.');
+    console.log('       Either way the fingerprint cannot see effort; confirm with scripts/quick-check.js.');
   }
 
   console.log(`\n  probes ${out.meta.probes} / attempts ${out.meta.http_attempts}`);
