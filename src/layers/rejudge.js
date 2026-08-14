@@ -17,10 +17,9 @@ import { genuineScreenScores } from './genuine-history.js';
 
 /**
  * @param {object} file  a parsed l1 result file
- * @param {{genuineEndpointId?: string}} [opts]
  * @returns {object} the file with `result` recomputed, plus `rejudged: true`
  */
-export function rejudgeL1(file, { genuineEndpointId = null } = {}) {
+export function rejudgeL1(file) {
   const subject = file.meta?.model;
   const control = file.meta?.control ?? 'gpt-5.4';
   if (!subject) return file;
@@ -31,14 +30,18 @@ export function rejudgeL1(file, { genuineEndpointId = null } = {}) {
   const refSubject = loadReference(subject, fpProtocol);
   const refControl = loadReference(control, fpProtocol);
   const selection = selectCells(refSubject, refControl, { tier: 'l1' });
+  // 🔴 Which endpoint's live screens may widen T_pass is a property of THE REFERENCE, not
+  // a global setting: those screens are only a sample of the genuine spread because they
+  // are the reference's own source measured against itself. Reading it from a config flag
+  // meant that moving the flag — as the switch to the official API does — silently
+  // emptied the empirical calibration for the other wire, dropping T_pass back to the
+  // simulated value that rejected the genuine endpoint two runs in five.
   const calibration = combineThresholds(
     calibrateL1Thresholds(refSubject, refControl, selection),
-    genuineEndpointId
-      ? genuineScreenScores({
-        endpointId: genuineEndpointId, model: subject,
-        referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
-      })
-      : [],
+    genuineScreenScores({
+      endpointId: refSubject.source_label, model: subject,
+      referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
+    }),
   );
 
   // Re-normalise from the stored raw answers under the pass that matches reference/.

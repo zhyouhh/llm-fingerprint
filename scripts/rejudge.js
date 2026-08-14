@@ -15,8 +15,6 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { VERDICT } from '../src/contracts.js';
 import { rejudgeL1 } from '../src/layers/rejudge.js';
-import { genuineEndpointId } from '../src/layers/genuine-history.js';
-import { loadEndpoints } from '../src/lib/config.js';
 import { runMain } from '../src/lib/cli.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,7 +26,6 @@ await runMain(async () => {
     console.log('no runs on disk yet — nothing to re-judge.');
     return;
   }
-  const genuine = genuineEndpointId(loadEndpoints());
   const files = readdirSync(RUNS).filter((f) => f.includes('__l1__')).sort();
   const latest = new Map();
   for (const f of files) latest.set(f.split('__')[0], f);   // keep the newest per endpoint
@@ -43,7 +40,7 @@ await runMain(async () => {
 
     let out;
     try {
-      out = rejudgeL1(stored, { genuineEndpointId: genuine });
+      out = rejudgeL1(stored);
     } catch (err) {
       // A run whose reference is gone (or now lives on another wire) is reported, not
       // silently skipped — an absent row reads as "nothing to say about this endpoint".

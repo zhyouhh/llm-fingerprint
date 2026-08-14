@@ -37,6 +37,16 @@ const USAGE = `node scripts/refresh-reference.js --endpoint <id> --model M [--ce
 ⚠️ 两种协议的分布不同，参照与待测必须用同一种。文件会记下它，比较时会校验。`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
+// The usage text has always said a reference may only come from a genuine endpoint;
+// nothing enforced it. A reference IS the ground truth every later verdict is measured
+// against, so collecting one from an unverified endpoint does not produce a weaker
+// answer — it produces a confident wrong one, for every endpoint, until someone notices.
+if (!endpoint.genuine) {
+  console.error(`${endpoint.id} is not marked genuine in config/endpoints.json.`);
+  console.error('A reference is this project\'s ground truth. Establish genuineness outside this tool');
+  console.error('(vendor API by definition, or a confirmed supply chain), then set "genuine": true.');
+  process.exit(2);
+}
 const model = args.model ?? endpoint.models.subject;
 const reps = Number(args.reps ?? 30);
 const which = args.cells === true ? 'l1' : (args.cells ?? 'l1');

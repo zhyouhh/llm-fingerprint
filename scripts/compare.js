@@ -42,9 +42,6 @@ await runMain(async () => {
   const rows = [];
 
   const all = listWithKeys();
-  // The endpoint whose genuineness is established outside this tool; its live screens
-  // are what widen T_pass (see combineThresholds).
-  const genuineEndpointId = all.find((e) => e.endpoint.genuine)?.endpoint.id ?? null;
 
   for (const { endpoint, skipped, reason } of all) {
     if (only && !only.includes(endpoint.id)) continue;
@@ -57,7 +54,7 @@ await runMain(async () => {
       // 🔴 Re-judged, never read verbatim: a stored verdict was reached under whatever
       // calibration was current that day, and reporting it back would surface
       // conclusions this project no longer holds.
-      l1: (() => { const f = latest(endpoint.id, 'l1'); return f ? rejudgeL1(f, { genuineEndpointId }) : null; })(),
+      l1: (() => { const f = latest(endpoint.id, 'l1'); return f ? rejudgeL1(f) : null; })(),
       l2: latest(endpoint.id, 'l2'),
       reasoning: latest(endpoint.id, 'reasoning'),
     }));

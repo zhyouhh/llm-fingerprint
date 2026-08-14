@@ -48,14 +48,15 @@ await runMain(async () => {
   assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
   console.log(`  fingerprint protocol: ${fpProtocol} (from the references)`);
   const probe = fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey });
-  const genuine = loadEndpoints().find((e) => e.genuine);
-  const genuineScores = genuine
-    ? genuineScreenScores({
-      endpointId: genuine.id, model: subject,
-      referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
-    })
-    : [];
-  if (genuineScores.length) console.log(`  T_pass widened by ${genuineScores.length} live screens of ${genuine.id}`);
+  // The reference names its own source; that is the endpoint whose live screens are a
+  // sample of the genuine spread against THIS reference.
+  const genuineScores = genuineScreenScores({
+    endpointId: refSubject.source_label, model: subject,
+    referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
+  });
+  if (genuineScores.length) {
+    console.log(`  T_pass widened by ${genuineScores.length} live screens of ${refSubject.source_label}`);
+  }
 
   const out = await screenL1({
     probe, model: subject, refSubject, refControl, genuineScores, fpProtocol,

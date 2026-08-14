@@ -11,7 +11,8 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "🔴 采不了指纹参照，不要再试：指纹层的请求体带 `reasoning:{enabled:false}`（OpenRouter 扩展，论文数据就是在 OpenRouter 上采的），官方 API 400 Unknown parameter；去掉它并改用 max_completion_tokens 后能通，但推理模型会把 16 token 预算全烧在隐藏推理上，补全为空（valid 0%，实测 240/240）。中转之所以采得到，是因为它们接受那个参数、把推理关掉了。用途：注入量基线（~7 token）、能力对照、将来识别\"转卖真 API key\"型中转。"
+      "notes": "responses 协议的正版参照来源（reference/responses/*）。身份无需推断——厂商 API 按定义即 ground truth；外壳仅 ~7 token，是四个端点里最小的，所以 L2 的分母 H 拉得开。⚠️ 只能走 responses：chat 口径的请求体带 `reasoning:{enabled:false}`（OpenRouter 扩展，论文数据即采自那里），官方 400 Unknown parameter；去掉它改用 max_completion_tokens 后能通，但推理模型把 16 token 预算全烧在隐藏推理上，补全为空（实测 240/240）。responses 用 `reasoning:{effort:'none'}` 达到同一状态，实测 240/240 valid、reasoning 0%。",
+      "genuine": true
     },
     {
       "id": "selfhosted",
@@ -23,7 +24,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "正版参照来源（供应链确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点）。reference/genuine-*.json 采自这里。⚠️ 它带 ~294 token 外壳，所以对\"外壳与它相似\"的待测端点（如 relay-C，H_c 仅 0.099）校准力弱——这是已知局限，不是实现问题。",
+      "notes": "chat 协议的正版参照来源（reference/chat/*）。供应链确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点——比\"厂商按定义即正版\"弱一档，但官方采不了 chat 口径，这条线只能由它供。⚠️ 它带 ~294 token 外壳，所以对\"外壳与它相似\"的待测端点（如 relay-C，H_c 仅 0.099）校准力弱——已知局限，不是实现问题。也是待测对象之一。",
       "genuine": true
     },
     {

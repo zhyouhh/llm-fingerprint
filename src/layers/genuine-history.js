@@ -15,8 +15,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const RUNS = path.join(ROOT, 'var', 'runs');
 
 /**
+ * 🔴 `endpointId` is the reference's own `source_label`, never a global config flag. These
+ * scores mean "the genuine model, screened against the reference collected FROM it" — so
+ * which endpoint qualifies depends on which reference, and since the two wires now have
+ * different sources, it depends on the protocol too.
+ *
  * @param {{endpointId: string, model: string, referenceVersion?: string,
- *          fingerprintProtocol?: string}} filter
+ *          fingerprintProtocol?: string, runsDir?: string}} filter
  * @returns {number[]} S_screen from every stored screen matching the filter
  */
 export function genuineScreenScores({
@@ -39,9 +44,4 @@ export function genuineScreenScores({
     if (typeof j.result?.s_screen === 'number') out.push(j.result.s_screen);
   }
   return out;
-}
-
-/** The endpoint whose genuineness is established outside this tool (supply chain). */
-export function genuineEndpointId(endpoints) {
-  return endpoints.find((e) => e.genuine)?.id ?? null;
 }
