@@ -37,7 +37,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "2026-07 实测：跑在 One API / New API 框架上（x-oneapi-request-id）；会轮换账号（~70% 未注入 / ~30% 注入 4400-6600 token）。当时未发现掺假迹象。"
+      "notes": "🔴 2026-08-14 实测确认间歇性掺假：09:13 那次 sol 是真货（对官方 sol 0.0364），08:14 那次是 `gpt-5.6-luna`（对官方 luna 0.0463）。同一天相隔一小时，13/29 格众数不同。轮换是粘性的（一格 15 次全落同一后端），所以**单次 L2 等于抽一次签**。跑在 One API / New API 框架上（x-oneapi-request-id）。"
     },
     {
       "id": "relay-B",
@@ -49,7 +49,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "新候选，未画像。"
+      "notes": "🔴 2026-08-14 实测确认掺假：`gpt-5.6-sol` 与 `gpt-5.4` 两个名字发的都是 `gpt-5.6-luna`（对官方 luna 参照 JSD 0.0237 / 0.0422，均低于噪声地板 0.0833；真 sol↔luna 为 0.1815）。⚠️ chat 线注入 ~4692 token，不适合做论文库比对；responses 线只注入 48。"
     },
     {
       "id": "relay-C",
@@ -61,7 +61,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "新候选，未画像。"
+      "notes": "✅ 2026-08-14 实测：sol 对官方参照 0.0473，低于噪声地板 0.0833 —— 真货。L2 判 consistent（S/H 区间 [0.10, 1.09] 整体在 1.5 线下）。外壳极小（48 tok/探针）。"
     }
   ]
 }
