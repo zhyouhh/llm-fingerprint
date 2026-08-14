@@ -7,7 +7,12 @@ import { evaluateL1 } from '../src/layers/l1-screen.js';
 import { makeSample, VERDICT, L1_LOGICAL_SAMPLES } from '../src/contracts.js';
 import { mulberry32, drawWithReplacement } from '../src/lib/rng.js';
 
-const load = (m) => JSON.parse(readFileSync(new URL(`../reference/genuine-${m}.json`, import.meta.url), 'utf8'));
+// 🔴 A FROZEN copy, not reference/. These tests pin exact values to lock the
+// calculation pipeline — thresholds are asserted with ===, no tolerance — and
+// reference/ is expected to be re-collected whenever the endpoint warrants it.
+// Pointing them at the live file would mean every legitimate refresh breaks the
+// regression suite, and a suite that breaks for legitimate reasons gets muted.
+const load = (m) => JSON.parse(readFileSync(new URL(`./fixtures/reference/genuine-${m}.json`, import.meta.url), 'utf8'));
 const sol = load('gpt-5.6-sol');
 const g54 = load('gpt-5.4');
 
