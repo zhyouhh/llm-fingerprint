@@ -2,6 +2,19 @@
   "_comment": "候选端点清单。提交进 git（仓库 private）；绝不放 key —— auth_env 只写环境变量名。新增端点见 endpoints.example.json。",
   "endpoints": [
     {
+      "id": "official",
+      "name": "OpenAI 官方 API",
+      "base_url": "https://api.openai.com/v1",
+      "protocol": "responses",
+      "auth_env": "OPENAI_API_KEY",
+      "models": {
+        "subject": "gpt-5.6-sol",
+        "control": "gpt-5.4"
+      },
+      "notes": "🔴 参照来源。身份无需推断——它按定义就是 ground truth，且没有网关外壳，所以 L2 的 H 项能拉开、判据更稳。支持 logprobs（裸 API 特征）。",
+      "genuine": true
+    },
+    {
       "id": "selfhosted",
       "name": "自建 cliproxyapi 网关",
       "base_url": "https://selfhosted.example/v1",
@@ -11,8 +24,7 @@
         "subject": "gpt-5.6-sol",
         "control": "gpt-5.4"
       },
-      "notes": "供应链已确认：ChatGPT 订阅 OAuth → OpenAI 后端，链路上无替换点。reference/genuine-*.json 就是在这里采的，是本项目的正版参照端点。",
-      "genuine": true
+      "notes": "订阅逆向网关（ChatGPT OAuth → OpenAI 后端）。供应链已确认，但自 2026-08-14 起参照改从官方 API 采，本端点降为待测对象之一。"
     },
     {
       "id": "relay-A",
