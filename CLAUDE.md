@@ -92,7 +92,7 @@ Responses + `effort:none` 下 47/57/57）。所以参照与待测**必须同协�
 | **L0a 零请求画像** | `/api/status` 开放接口、`GET /models`、响应头特征、端点类型推断 | **0 次** | 端点类型；**谎称"官方 API 直连"当场戳穿** | 否 |
 | **L0b 能力探测** | 参数接受度矩阵 14 项（effort 8 档 + reasoning.mode 2 + logprobs/seed/n/temperature）、juice 探针、注入量截距 | ~24 次 | 端点类型；透不透传 effort | 否 |
 | **L1 快筛** | 3 格 × 5 次，与本地参照比 `S_screen`，对离线标定的 `T_pass`/`T_fail` | **15 次** | 「还是不是它」（绿 / 需精确确认） | 是（读本地 `reference/`） |
-| **L2 精确校准** | H / S / D（对照校准法）+ 偏置校正 + bootstrap 置信区间 | 180 次/端点 | **模型身份**（最硬） | 是 |
+| **L2 精确校准** | H / S / D（对照校准法）+ 偏置校正 + bootstrap 置信区间 | **活格×15×(采对照?2:1)**；29 活格 = 870 / `--no-control` 435 | **模型身份**（最硬）；配多份参照可**指认型号** | 是 |
 | **reasoning 巡检**（旁挂） | 生成式难题六档标定 + 日常比对，见下 | ~36 次 | **reasoning 降档** | 否（需 `probes/calibration.json`） |
 
 日常只跑 L0+L1；换供应商或起疑时才上 L2。降档嫌疑走 reasoning 巡检。
@@ -162,6 +162,11 @@ node scripts/quick-check.js --endpoint <id> [--effort high] [--n 36]
 
 `reference/` 是**一次性投入、可反复使用**的资产：以后测任何新中转，只花新中转的额度，
 参照直接读本地。**模型版本更新后需重采**（厂商换了权重，旧参照就不代表正版了）。
+
+**多采几个候选型号的参照 = 从「判定」升级到「指认」**：只有 sol 的参照时，异常端点只能报
+「不是 sol」；补了 luna 的参照之后，同一批数据直接算出「是 luna」。候选从 `GET /models`
+里挑同代/同族型号（sol 的邻居是 `gpt-5.6-luna` / `gpt-5.6-terra`）——**同代兄弟是最合理的
+掺假对象**：名字像、更便宜、行为接近但不同。
 
 ## 硬约束
 
@@ -292,13 +297,15 @@ scripts/
   compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
   calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
-reference/<protocol>/  正版参照指纹（提交进 git，脱敏无端点URL）。`chat/` 采自自建网关，
-                     `responses/` 采自 OpenAI 官方 API（40 格 × 30 次 × 2 模型）
+reference/<protocol>/  正版参照指纹（提交进 git，脱敏无端点URL）。
+                     `chat/`      采自自建网关：gpt-5.6-sol / gpt-5.4（8 格）
+                     `responses/` 采自 OpenAI 官方 API：**sol / 5.4 / luna**，各 40 格 × 30 次。
+                     🔴 luna 那份是**指认掺假型号**用的——有它之后 15 探针的 L1 就能认出 luna
 probes/              knowledge.json（知识题库）+ calibration.json（推理题校准）
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/                16 个 suite / **161 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
+test/                16 个 suite / **163 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
                      runner / l0-profile / l1-screen / l2-verdict / cells / noise / guards /
                      bootstrap / config / golden-guard / fingerprint-protocol /
                      reference-store / probes
@@ -334,14 +341,21 @@ node scripts/screen.js --endpoint <id>
 # 3. reasoning 降档（~36 次）——查有没有偷偷降 effort
 node scripts/quick-check.js --endpoint <id>
 
-# 4. 模型身份（180 次，最贵，L1 报警或换供应商时才跑）
-node scripts/verify-relay.js --endpoint <id> --fp-protocol responses --no-control
+# 4. 模型身份（870 次，最贵，L1 报警或换供应商时才跑）
+#    🔴 首测必须带对照：没采对照就测不出外壳，也抓不到"两个模型名发同一个东西"
+node scripts/verify-relay.js --endpoint <id> --fp-protocol responses
+#    确认该端点 H_c 远低于噪声地板之后，复测才好用 --no-control 省一半
+
+# 5. 指认掺的是哪个型号（0 新请求，前提是已采好候选型号的官方参照）
+#    对 reference/responses/ 下每份参照量距离，落到地板以下的那个就是它
 
 # 横评多家：一条命令跑完 config 里全部端点
 npm run compare -- --tier screen        # 每端点 41 次；决赛选手再单独跑 --tier full
 ```
 
-判读见各层说明。**第 2 层最硬（模型身份），第 1 层查降档，知识题最弱（见下）。**
+🔴 **一次绿灯 ≠ 该端点干净**。relay-A 单次 L2 通过（S_c 0.0364），一小时前那次却是 luna。
+轮换是**粘性**的（一格 15 次全落同一后端），所以单次 L2 等于抽一次签。
+要有把握必须**跨时间多测几次**——有了 luna 参照之后，15 探针的 L1 快筛就足以认出它。
 
 ## 密钥管理
 
@@ -783,7 +797,26 @@ Ciudad de la Paz 属国）+ 1 道自适应糖果组合推理题。参数 `max_co
 
 （按时间倒序，新的在上）
 
-- **2026-08-14** 按 plan 实施阶段 0-6、8（reasoning 巡检那层留着没做）。141 测试全绿。
+- **2026-08-14 下午** 判定层大修 + 实测确认掺假。**163 测试全绿**，16 个变异全杀。
+
+  **抓到了真东西**：relay-B 的 `gpt-5.6-sol` 与 `gpt-5.4` **两个名字发的都是 `gpt-5.6-luna`**；
+  relay-A **间歇性**掺 luna（同一天相隔一小时，一次真一次假）。relay-C / relay-D / relay-E /
+  自建网关都是真货。详见「指名道姓」与「六家横评总表」。
+
+  🔴 **本轮修掉的缺陷有一个共同形态：守卫写了，但永远不可能触发。**
+  ① `screen.js` 把 `refSubject` 当两个参数传给 `assertSameProtocol`——任何一对文件都不可能让它失败；
+  ② D 塌陷守卫放在 consistent 分支**之后**，只挡得住 suspect（relay-B 的假绿灯就是从这里漏的）；
+  ③ `consistentPoint` 在数学上被 `ci.hi < 1.5` 蕴含，是死代码；
+  ④ `makeL2Result` 只挑命名字段，把算好的 `reason` 整个丢掉。
+  **全靠变异检验暴露**——第一轮 5 个变异活下来 3 个，说明测试本身是空的。
+
+  另外两个真 bug：`(a,b)=>a-b` 排序遇 `Infinity` → `Array.sort` 未定义行为 → 区间算成 `[0,0]` →
+  **6 格里 4 格答案完全不同会判 ✅**；`L2_LOGICAL_SAMPLES_PER_SIDE=90` 写死，电池扩到 40 格即抛错。
+
+  **两次花钱买的教训**：变量名手滑（`sampledControl` vs `sampleControl`）白烧 435 探针；
+  没查 relay-B 在 chat 线的注入量（4692 tok）就去对论文库排名，白烧 1200 探针。
+  **凡要花额度的路径，先用 stub probe 端到端跑通再发真请求。**
+- **2026-08-14 上午** 按 plan 实施阶段 0-6、8（reasoning 巡检那层留着没做）。141 测试全绿。
   四家端点实测横评见「实测结论存档」。**L2 把 L1 的两个判定都翻掉了**，验证了对照校准法的价值。
 
   🔴 **本轮踩到同一个失效模式三次，都不报错、只是让比较悄悄失去意义**：
