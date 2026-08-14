@@ -13,10 +13,11 @@
 // sides normalised differently silently voids the comparison, and the only reason that
 // bug was findable at all is that someone went and read the raw samples.
 import path from 'node:path';
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { writeFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { fingerprintProbeFactory, FINGERPRINT_PROTOCOLS } from '../src/probe/http/fingerprint-probe.js';
+import { referencePath, loadReference, referenceExists } from '../src/lib/reference-store.js';
 import { runBattery, QUICK_CELLS } from '../src/probe/runner.js';
 import { rates } from '../src/contracts.js';
 import { selectCells } from '../src/probe/cells.js';
@@ -46,15 +47,25 @@ if (!FINGERPRINT_PROTOCOLS[fpProtocol]) {
 }
 
 await runMain(async () => {
-  const refPath = path.join(ROOT, 'reference', `genuine-${model}.json`);
-  const existing = existsSync(refPath) ? JSON.parse(readFileSync(refPath, 'utf8')) : null;
+  // 🔴 Addressed by (model, protocol). While this was keyed on the model alone, a partial
+  // refresh on one wire inherited the cells it did not re-collect from the other wire and
+  // stamped the result with a single protocol — see src/lib/reference-store.js.
+  const refPath = referencePath(model, fpProtocol);
+  const existing = referenceExists(model, fpProtocol) ? loadReference(model, fpProtocol) : null;
 
   let cells;
   if (which === 'all') {
     cells = QUICK_CELLS.map(([task_id, lang]) => ({ task_id, lang, reps }));
   } else {
     const control = endpoint.models.control;
-    const controlRef = JSON.parse(readFileSync(path.join(ROOT, 'reference', `genuine-${control}.json`), 'utf8'));
+    if (!existing) {
+      console.error(`--cells l1 picks the three cells by comparing this model's reference with the ` +
+                    `control's, and there is no ${fpProtocol} reference for ${model} yet.`);
+      console.error(`Bootstrap the protocol with --cells all first.`);
+      process.exit(2);
+    }
+    // Same protocol on both sides, or the cell ranking is computed across wires.
+    const controlRef = loadReference(control, fpProtocol);
     // The same three cells L1 will actually screen on — no point paying for the rest.
     cells = selectCells(existing, controlRef, { tier: 'l1' }).cells.map((c) => ({ ...c, reps }));
   }
@@ -114,8 +125,16 @@ await runMain(async () => {
   }
 
   if (existing) {
-    const backup = refPath.replace(/\.json$/, `.${(existing.collected_utc ?? 'old').slice(0, 10)}.json`);
-    if (!existsSync(backup)) { copyFileSync(refPath, backup); console.log(`\n  previous kept at ${path.relative(ROOT, backup)}`); }
+    // 🔴 Never skip the backup. The name is only date-precise, so a second refresh on the
+    // same day used to find the name taken and quietly keep nothing — the version about
+    // to be overwritten would have been the one with no copy anywhere.
+    const stem = refPath.replace(/\.json$/, `.${(existing.collected_utc ?? 'old').slice(0, 10)}`);
+    let backup = `${stem}.json`;
+    for (let n = 2; existsSync(backup); n += 1) backup = `${stem}-${String(n).padStart(2, '0')}.json`;
+    copyFileSync(refPath, backup);
+    console.log(`\n  previous kept at ${path.relative(ROOT, backup)}`);
+  } else {
+    mkdirSync(path.dirname(refPath), { recursive: true });
   }
 
   writeFileSync(refPath, `${JSON.stringify({

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { noiseFloor, correct, validAnswersByCell } from '../src/stats/noise.js';
 
-const ref = JSON.parse(readFileSync(new URL('../reference/genuine-gpt-5.6-sol.json', import.meta.url), 'utf8'));
+const ref = JSON.parse(readFileSync(new URL('../reference/chat/genuine-gpt-5.6-sol.json', import.meta.url), 'utf8'));
 const byCell = validAnswersByCell(ref.samples);
 
 test('same seed, same numbers — exactly', () => {

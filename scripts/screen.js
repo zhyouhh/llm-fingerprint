@@ -7,10 +7,10 @@
 // we stored", not "which model is this" — for that, and for a substitution the screen
 // only hints at, go to L2.
 import path from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { fingerprintProbeFactory, assertSameProtocol } from '../src/probe/http/fingerprint-probe.js';
+import { loadReference, resolveProtocol } from '../src/lib/reference-store.js';
 import { screenL1 } from '../src/layers/l1-screen.js';
 import { genuineScreenScores } from '../src/layers/genuine-history.js';
 import { loadEndpoints } from '../src/lib/config.js';
@@ -20,44 +20,45 @@ import { VERDICT } from '../src/contracts.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = parseArgs();
 
-const USAGE = `node scripts/screen.js --endpoint <id> [--model M] [--control M]
+const USAGE = `node scripts/screen.js --endpoint <id> [--model M] [--control M] [--fp-protocol P]
 
   --endpoint <id>  端点 id，见 config/endpoints.json
   --model M        待验模型（默认取该端点的 models.subject）
-  --control M      对照模型，只用于选格与标定阈值（不采样，不花额度）`;
+  --control M      对照模型，只用于选格与标定阈值（不采样，不花额度）
+  --fp-protocol P  chat | responses —— 只有一种协议有参照时可省略`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
 const subject = args.model ?? endpoint.models.subject;
 const control = args.control ?? endpoint.models.control;
 
-const refPath = (m) => path.join(ROOT, 'reference', `genuine-${m}.json`);
-for (const m of [subject, control]) {
-  if (!existsSync(refPath(m))) {
-    console.error(`missing reference/genuine-${m}.json — collect it once from a known-genuine endpoint:`);
-    console.error(`  node scripts/probe-endpoint.js --endpoint <genuine-id> --model ${m}`);
-    process.exit(2);
-  }
-}
-
 await runMain(async () => {
-  const refSubject = JSON.parse(readFileSync(refPath(subject), 'utf8'));
-  const refControl = JSON.parse(readFileSync(refPath(control), 'utf8'));
+  const fpProtocol = resolveProtocol({
+    models: [subject, control],
+    requested: args['fp-protocol'] === true ? null : (args['fp-protocol'] ?? null),
+  });
+  const refSubject = loadReference(subject, fpProtocol);
+  const refControl = loadReference(control, fpProtocol);
 
   console.log(`screening ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
   console.log(`  reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
 
-  // The reference dictates the protocol — it is the fixed side of the comparison.
-  const fpProtocol = assertSameProtocol(refSubject.fingerprint_protocol, refSubject.fingerprint_protocol ?? 'chat');
-  console.log(`  fingerprint protocol: ${fpProtocol} (from the reference)`);
+  // 🔴 The two references are both sides of the cell ranking and the threshold, so they
+  // must agree with each other. This used to compare refSubject with itself, which no
+  // pair of files can fail; the pair that actually matters went unchecked.
+  assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
+  console.log(`  fingerprint protocol: ${fpProtocol} (from the references)`);
   const probe = fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey });
   const genuine = loadEndpoints().find((e) => e.genuine);
   const genuineScores = genuine
-    ? genuineScreenScores({ endpointId: genuine.id, model: subject, referenceVersion: refSubject.collected_utc })
+    ? genuineScreenScores({
+      endpointId: genuine.id, model: subject,
+      referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
+    })
     : [];
   if (genuineScores.length) console.log(`  T_pass widened by ${genuineScores.length} live screens of ${genuine.id}`);
 
   const out = await screenL1({
-    probe, model: subject, refSubject, refControl, genuineScores,
+    probe, model: subject, refSubject, refControl, genuineScores, fpProtocol,
     onProgress: ({ done, total }) => process.stdout.write(`\r  ${done}/${total}   `),
   });
   const r = out.result;

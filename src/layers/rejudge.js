@@ -8,17 +8,12 @@
 // The samples do not age. Judging from them under today's calibration is what the
 // 重跑边界 promise is for, and it costs nothing.
 
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { normalizeRecords } from '../normalize/index.js';
 import { SAMPLE_KIND, classifySample, makeSample } from '../contracts.js';
 import { selectCells, calibrateL1Thresholds, combineThresholds } from '../probe/cells.js';
+import { loadReference, DEFAULT_PROTOCOL } from '../lib/reference-store.js';
 import { evaluateL1 } from './l1-screen.js';
 import { genuineScreenScores } from './genuine-history.js';
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const loadRef = (m) => JSON.parse(readFileSync(path.join(ROOT, 'reference', `genuine-${m}.json`), 'utf8'));
 
 /**
  * @param {object} file  a parsed l1 result file
@@ -30,13 +25,19 @@ export function rejudgeL1(file, { genuineEndpointId = null } = {}) {
   const control = file.meta?.control ?? 'gpt-5.4';
   if (!subject) return file;
 
-  const refSubject = loadRef(subject);
-  const refControl = loadRef(control);
+  // 🔴 Re-judge on the wire the run was collected over, not on whichever reference happens
+  // to be on disk. Runs predating the split carry no field and are chat by construction.
+  const fpProtocol = file.meta?.fingerprint_protocol ?? DEFAULT_PROTOCOL;
+  const refSubject = loadReference(subject, fpProtocol);
+  const refControl = loadReference(control, fpProtocol);
   const selection = selectCells(refSubject, refControl, { tier: 'l1' });
   const calibration = combineThresholds(
     calibrateL1Thresholds(refSubject, refControl, selection),
     genuineEndpointId
-      ? genuineScreenScores({ endpointId: genuineEndpointId, model: subject, referenceVersion: refSubject.collected_utc })
+      ? genuineScreenScores({
+        endpointId: genuineEndpointId, model: subject,
+        referenceVersion: refSubject.collected_utc, fingerprintProtocol: fpProtocol,
+      })
       : [],
   );
 

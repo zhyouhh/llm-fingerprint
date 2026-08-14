@@ -14,10 +14,10 @@
 // cannot, which is why an L1 amber verdict is a reason to come here rather than a
 // finding in itself.
 import path from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { fingerprintProbeFactory, assertSameProtocol } from '../src/probe/http/fingerprint-probe.js';
+import { loadReference, resolveProtocol } from '../src/lib/reference-store.js';
 import { calibrateL2, CONSISTENT_RATIO, SUSPECT_RATIO } from '../src/layers/l2-calibrate.js';
 import { writeResultFile } from '../src/layers/result-file.js';
 import { VERDICT } from '../src/contracts.js';
@@ -25,39 +25,35 @@ import { VERDICT } from '../src/contracts.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = parseArgs();
 
-const USAGE = `node scripts/verify-relay.js --endpoint <id> [--subject M] [--control M]
+const USAGE = `node scripts/verify-relay.js --endpoint <id> [--subject M] [--control M] [--fp-protocol P]
 
   --endpoint <id>  端点 id，见 config/endpoints.json
   --subject M      待验模型（默认取该端点的 models.subject）
-  --control M      对照模型 —— 必须双方都提供且已独立确认为正版`;
+  --control M      对照模型 —— 必须双方都提供且已独立确认为正版
+  --fp-protocol P  chat | responses —— 只有一种协议有参照时可省略`;
 
 const { endpoint, apiKey } = resolveEndpointArg(args, { usage: USAGE });
 const subject = args.subject ?? endpoint.models.subject;
 const control = args.control ?? endpoint.models.control;
 
-const refPath = (m) => path.join(ROOT, 'reference', `genuine-${m}.json`);
-for (const m of [subject, control]) {
-  if (!existsSync(refPath(m))) {
-    console.error(`missing reference/genuine-${m}.json — collect it once from a known-genuine endpoint:`);
-    console.error(`  node scripts/refresh-reference.js --endpoint <genuine-id> --model ${m} --cells all`);
-    process.exit(2);
-  }
-}
-
 await runMain(async () => {
-  const refSubject = JSON.parse(readFileSync(refPath(subject), 'utf8'));
-  const refControl = JSON.parse(readFileSync(refPath(control), 'utf8'));
+  const fpProtocol = resolveProtocol({
+    models: [subject, control],
+    requested: args['fp-protocol'] === true ? null : (args['fp-protocol'] ?? null),
+  });
+  const refSubject = loadReference(subject, fpProtocol);
+  const refControl = loadReference(control, fpProtocol);
 
   console.log(`verifying ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
   console.log(`  control ${control}   reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
 
   // Both references must agree with each other before either is compared to anything.
-  const fpProtocol = assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
+  assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
   console.log(`  fingerprint protocol: ${fpProtocol} (from the references)`);
 
   const out = await calibrateL2({
     probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
-    subject, control, refSubject, refControl,
+    subject, control, refSubject, refControl, fpProtocol,
     onProgress: ({ done, total, model }) => process.stdout.write(`\r  ${model} ${done}/${total}   `),
   });
   const r = out.result;

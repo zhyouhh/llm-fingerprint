@@ -99,7 +99,15 @@ export function evaluateL1({ samples, refSubject, selection, calibration }) {
  *
  * @returns {Promise<object>} a collection envelope whose `result` is the L1 result
  */
-export async function screenL1({ probe, model, refSubject, refControl, genuineScores = [], onProgress }) {
+export async function screenL1({ probe, model, refSubject, refControl, genuineScores = [], fpProtocol, onProgress }) {
+  // 🔴 No default. A run judged against a reference is only meaningful on the reference's
+  // own wire, and rejudge/genuine-history read this back off the stored file to decide
+  // which reference to use and which live scores may be pooled. Guessing "chat" here
+  // would make a responses run re-judge itself against chat data without a word.
+  if (typeof fpProtocol !== 'string') {
+    throw new Error('screenL1: fpProtocol must be passed explicitly — it is recorded in meta and ' +
+                    'decides which reference a re-judge is allowed to use.');
+  }
   const selection = selectCells(refSubject, refControl, { tier: 'l1' });
   // Simulated p99, widened by what the genuine endpoint actually scores. See
   // combineThresholds for why the simulation alone is not enough.
@@ -120,8 +128,11 @@ export async function screenL1({ probe, model, refSubject, refControl, genuineSc
     samples,
     meta: {
       tier: 'l1', model,
-      // 🔴 The four things a recomputation needs (重跑边界). Without them the file can
-      // be re-read but not re-judged at the same calibration.
+      // 🔴 The things a recomputation needs (重跑边界). Without them the file can be
+      // re-read but not re-judged at the same calibration. `fingerprint_protocol` joined
+      // the list once a second wire existed: it identifies WHICH reference the numbers
+      // were ever comparable with.
+      fingerprint_protocol: fpProtocol,
       reference_version: refSubject.collected_utc ?? 'unknown',
       cells: selection.cells.map((c) => c.cell),
       reps_per_cell: selection.repsPerCell,

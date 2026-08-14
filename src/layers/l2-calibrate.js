@@ -156,7 +156,14 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
 /**
  * Collect both sides and judge. 180 logical probes: 6 live cells × 15 reps × 2 models.
  */
-export async function calibrateL2({ probe, subject, control, refSubject, refControl, onProgress }) {
+export async function calibrateL2({ probe, subject, control, refSubject, refControl, fpProtocol, onProgress }) {
+  // 🔴 Explicit, for the same reason screenL1 demands it: the stored file has to say which
+  // wire produced it, or a later reader cannot tell which reference it was ever comparable
+  // with.
+  if (typeof fpProtocol !== 'string') {
+    throw new Error('calibrateL2: fpProtocol must be passed explicitly — it is recorded in meta and ' +
+                    'identifies which reference these numbers are comparable with.');
+  }
   const selection = selectCells(refSubject, refControl, { tier: 'l2' });
 
   const collect = (model, role) => runBattery({
@@ -182,6 +189,7 @@ export async function calibrateL2({ probe, subject, control, refSubject, refCont
     samples,
     meta: {
       tier: 'l2', model: subject, control,
+      fingerprint_protocol: fpProtocol,
       reference_version: refSubject.collected_utc ?? 'unknown',
       cells: selection.cells.map((c) => c.cell),
       reps_per_cell: selection.repsPerCell,
