@@ -187,9 +187,35 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
   // that cannot fail invites the reader to trust the wrong clause.
 
   // D is the yardstick for "what a different model looks like". Inside the noise floor it
-  // is not a yardstick — that happens when the relay answers the same for both model
-  // names, which is its own kind of alarming but is not something S/D can measure.
+  // is not a yardstick — the relay is answering alike for both model names.
   const scaleUsable = d_c >= floor;
+  // What the two models look like apart on ground truth, for the message below.
+  const refD = correct(meanOf(perCellJsd(refSubject.fingerprint, refControl.fingerprint, live)), floor);
+
+  // 🔴 Checked BEFORE any verdict, not just before `suspect`. This whole method rests on
+  // one assumption — the control model is genuine on BOTH sides — and a collapsed D is
+  // that assumption failing. H then measures the control being substituted too, not a
+  // harness, and "the harness explains the gap" becomes a false green.
+  //
+  // Measured, not hypothetical: relay-B returned H_c 0.3286, S_c 0.2325, D_c 0.0791 against
+  // a floor of 0.0833. Its two model names are three times closer to each other than the
+  // genuine pair is (0.384 on the official API), and the run was reported CONSISTENT
+  // because the enormous H swallowed the enormous S. Both models were off; nothing was
+  // a harness.
+  //
+  // ⚠️ --no-control cannot catch this: D then comes from the references, so it is the
+  // genuine pair distance by construction and never collapses.
+  if (sampledControl && !scaleUsable) {
+    return assertL2Result(makeL2Result({
+      ...withNumbers, verdict: VERDICT.INCONCLUSIVE,
+      reason: '⚠️ this relay answers alike for BOTH model names: the subject vs the control ' +
+              `measures D_c ${d_c.toFixed(4)}, inside the noise floor (${floor.toFixed(4)}), while ` +
+              `the reference endpoint puts them ${refD.toFixed(4)} apart. The control is supposed to ` +
+              `be the genuine model on both sides — that is what makes H a harness measurement — so ` +
+              `this run cannot calibrate anything, and a "consistent" here would only mean the two ` +
+              `substitutions cancelled. Screen the control model in its own right.`,
+    }));
+  }
 
   let verdict;
   let reason = null;

@@ -158,6 +158,25 @@ test('a subject different in every cell is convicted, interval and all', () => {
   assert.equal(r.verdict, VERDICT.SUSPECT);
 });
 
+test('a collapsed D blocks CONSISTENT too, not just SUSPECT', () => {
+  // 🔴 The false green this guard exists for, and it was measured, not imagined: relay-B
+  // returned H_c 0.3286, S_c 0.2325, D_c 0.0791 against a floor of 0.0833 and was reported
+  // CONSISTENT — the enormous H swallowed the enormous S. Both models were off; nothing was
+  // a harness. The check used to sit after the consistent branch, so it never ran.
+  //
+  // Here: the control does NOT match its reference (so H is large), and the relay returns
+  // the same thing for both names (so D collapses).
+  const r = judge({
+    subject: every('same'), control: every('same'),
+    refSubject: every(...VARIED), refControl: every(...CTRL),
+  });
+  assert.ok(r.h_c > r.noise_floor, 'H must be large, or this is not the regime being tested');
+  assert.ok(r.d_c < r.noise_floor, 'D must have collapsed');
+  assert.ok(r.ratio_ci_hi < CONSISTENT_RATIO, 'and S/H must otherwise PASS — that is the trap');
+  assert.equal(r.verdict, VERDICT.INCONCLUSIVE);
+  assert.match(r.reason, /BOTH model names/);
+});
+
 test('a relay serving the control model under both names has no scale to be judged against', () => {
   // The realistic version: the control matches its reference exactly (H ≈ 0), and the
   // subject comes back as the control. D — the yardstick for "what a different model looks
