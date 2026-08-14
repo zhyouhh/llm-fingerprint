@@ -43,10 +43,31 @@ test('no overlapping cells yields NaN rather than a fabricated number', () => {
   assert.equal(r.cells, 0);
 });
 
-test('an all-zero harness does not produce Infinity', () => {
-  // Self-comparison drives H to zero; a trial that draws only zero-harness cells has
-  // nothing to say about the ratio and must be dropped, not turned into Infinity.
+test('a gap over an all-zero denominator is unbounded, never a finite number', () => {
+  // A harness measured at zero explains nothing, so a subject that still differs has an
+  // unbounded ratio. These trials used to be DROPPED as "uninformative", which reads the
+  // sharpest available statement — the harness cannot account for this — as missing data.
   const r = ratioCI({ a: 0.01, b: 0.01 }, { a: 0, b: 0 }, { trials: 100 });
-  assert.equal(r.trials, 0, 'every trial was uninformative');
-  assert.ok(!Number.isFinite(r.lo) || Number.isNaN(r.lo));
+  assert.equal(r.ratio, Infinity);
+  assert.equal(r.hi, Infinity, 'the upper bound must carry it, or a consistency test would pass');
+  assert.ok(!(r.hi < 1.5));
+});
+
+test('no gap over an all-zero denominator is zero, not unjudgeable', () => {
+  // 🔴 The other half, and the reason dropping was not a safe default: with a fully
+  // deterministic reference the noise floor is exactly zero, so a PERFECT match had every
+  // trial dropped, an empty interval, and could never be judged consistent.
+  const r = ratioCI({ a: 0, b: 0 }, { a: 0, b: 0 }, { trials: 100 });
+  assert.equal(r.ratio, 0);
+  assert.equal(r.hi, 0);
+});
+
+test('Infinity and finite ratios sort together', () => {
+  // 🔴 `(a, b) => a - b` returns NaN for Infinity - Infinity, Array.sort is then free to
+  // do anything, and the interval came back [0, 0] — a subject differing in four of six
+  // cells was judged CONSISTENT off that.
+  const r = ratioCI({ a: 0.5, b: 0.5, c: 0.5, d: 0, e: 0, f: 0 }, { a: 0, b: 0, c: 0, d: 0, e: 0, f: 0 },
+    { trials: 500 });
+  assert.ok(r.lo <= r.hi, `interval must not be inverted: [${r.lo}, ${r.hi}]`);
+  assert.equal(r.hi, Infinity, 'the upper bound is reached by every trial that draws a differing cell');
 });

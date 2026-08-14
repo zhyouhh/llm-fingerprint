@@ -470,14 +470,28 @@ export function assertL1Result(result) {
  * number to accidentally read, which is what hides "control side is entirely dead".
  */
 export function makeL2Result({ verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_lo, ratio_ci_hi,
-                               noise_floor, subject, control, low_confidence, live_cells }) {
+                               sd_ratio, sd_ci_lo, sd_ci_hi, denominator_basis,
+                               noise_floor, subject, control, low_confidence, live_cells,
+                               reason = null, per_cell = null, dropped_cells = null }) {
   assertVerdict(verdict);
   if (typeof low_confidence !== 'boolean') usageError('L2 result: low_confidence must be a boolean');
   return Object.freeze({
-    verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_lo, ratio_ci_hi, noise_floor,
+    verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_lo, ratio_ci_hi,
+    // The suspect side of the judgement, reported on the same footing as the consistent
+    // side — it is a decision input, not a debug value.
+    sd_ratio, sd_ci_lo, sd_ci_hi,
+    // 'harness' when H_c carried the comparison, 'noise floor' when H_c was below what
+    // the measurement can resolve and the floor stood in for it.
+    denominator_basis,
+    noise_floor,
     subject: Object.freeze({ ...subject }),   // {valid_rate, response_rate, n_valid, ...}
     control: Object.freeze({ ...control }),
     low_confidence, live_cells,
+    // 🔴 These three were being computed and then dropped on the floor: makeL2Result
+    // names the fields it keeps, and they were not among them. The degenerate-denominator
+    // explanation was written for the reader and never reached them. makeL1Result had the
+    // identical bug; this is the same fix, one layer over.
+    reason, per_cell, dropped_cells,
   });
 }
 

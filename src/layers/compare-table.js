@@ -10,7 +10,7 @@
 import { COMPARE_SORT_ORDER, ROW_STATE, VERDICT } from '../contracts.js';
 
 export const COLUMNS = Object.freeze([
-  'endpoint', 'authenticity', 'distance', 'reasoning', 'latency_p50',
+  'endpoint', 'authenticity', 'wire', 'distance', 'reasoning', 'latency_p50',
   'response_rate', 'injection', 'kind', 'low_conf', 'probes', 'attempts',
 ]);
 
@@ -35,7 +35,7 @@ export function buildRow({ endpointId, l0 = null, l1 = null, l2 = null, reasonin
   if (skipped) {
     return {
       endpoint: endpointId, authenticity: ROW_STATE.SKIPPED, note: reason,
-      distance: null, reasoning: 'not_run', latency_p50: null, response_rate: null,
+      wire: null, distance: null, reasoning: 'not_run', latency_p50: null, response_rate: null,
       injection: null, kind: null, low_conf: false, probes: 0, attempts: 0,
     };
   }
@@ -65,6 +65,10 @@ export function buildRow({ endpointId, l0 = null, l1 = null, l2 = null, reasonin
   return {
     endpoint: endpointId,
     authenticity: authenticity ?? ROW_STATE.SKIPPED,
+    // 🔴 Which wire the authenticity verdict came from. Rows measured over different
+    // protocols are NOT comparable with one another, and a table that silently mixed them
+    // is this project's cardinal sin moved to the presentation layer.
+    wire: (l2 ?? l1)?.meta?.fingerprint_protocol ?? ((l2 ?? l1) ? 'chat' : null),
     distance,
     // Blank would read as "fine"; the two tiers never run reasoning probes, so say so.
     reasoning: reasoning?.result?.verdict ?? 'not_run',
@@ -100,10 +104,11 @@ export function renderTable(rows) {
     [VERDICT.INCONCLUSIVE]: '⚠️ ', [VERDICT.NOT_APPLICABLE]: '✗ ',
     [ROW_STATE.FINGERPRINT_UNAVAILABLE]: '✗ ', [ROW_STATE.SKIPPED]: '– ',
   };
-  const head = ['endpoint', 'authenticity', 'distance', 'reasoning', 'p50', 'resp', 'inject', 'kind', 'probes'];
+  const head = ['endpoint', 'authenticity', 'wire', 'distance', 'reasoning', 'p50', 'resp', 'inject', 'kind', 'probes'];
   const body = rows.map((r) => [
     r.endpoint,
     `${mark[r.authenticity] ?? '? '}${r.authenticity}${r.low_conf ? '†' : ''} (${r.source})`,
+    r.wire ?? '—',
     r.distance ?? '—',
     r.reasoning,
     r.latency_p50 != null ? `${Math.round(r.latency_p50)}ms` : '—',

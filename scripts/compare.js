@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs, runMain } from '../src/lib/cli.js';
 import { listWithKeys } from '../src/lib/config.js';
 import { buildRow, sortRows, renderTable, COLUMNS } from '../src/layers/compare-table.js';
-import { rejudgeL1 } from '../src/layers/rejudge.js';
+import { rejudgeL1, rejudgeL2 } from '../src/layers/rejudge.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUNS = path.join(ROOT, 'var', 'runs');
@@ -55,7 +55,7 @@ await runMain(async () => {
       // calibration was current that day, and reporting it back would surface
       // conclusions this project no longer holds.
       l1: (() => { const f = latest(endpoint.id, 'l1'); return f ? rejudgeL1(f) : null; })(),
-      l2: latest(endpoint.id, 'l2'),
+      l2: (() => { const f = latest(endpoint.id, 'l2'); return f ? rejudgeL2(f) : null; })(),
       reasoning: latest(endpoint.id, 'reasoning'),
     }));
   }

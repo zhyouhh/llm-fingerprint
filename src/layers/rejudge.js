@@ -13,7 +13,18 @@ import { SAMPLE_KIND, classifySample, makeSample } from '../contracts.js';
 import { selectCells, calibrateL1Thresholds, combineThresholds } from '../probe/cells.js';
 import { loadReference, DEFAULT_PROTOCOL } from '../lib/reference-store.js';
 import { evaluateL1 } from './l1-screen.js';
+import { evaluateL2 } from './l2-calibrate.js';
 import { genuineScreenScores } from './genuine-history.js';
+
+/** Stored rows → the sample shape the evaluators expect, re-normalised under today's pass. */
+function restoreSamples(rows) {
+  return normalizeRecords(rows, { applyReasoningTrace: false }).map((rec) => makeSample({
+    ...rec,
+    kind: SAMPLE_KIND.FINGERPRINT,
+    state: classifySample(SAMPLE_KIND.FINGERPRINT, { error: rec.error, answer_class: rec.answer_class }),
+    attempts: rec.attempts,
+  }));
+}
 
 /**
  * @param {object} file  a parsed l1 result file
@@ -45,18 +56,55 @@ export function rejudgeL1(file) {
   );
 
   // Re-normalise from the stored raw answers under the pass that matches reference/.
-  const normalised = normalizeRecords(file.samples, { applyReasoningTrace: false });
-  const samples = normalised.map((rec) => makeSample({
-    ...rec,
-    kind: SAMPLE_KIND.FINGERPRINT,
-    state: classifySample(SAMPLE_KIND.FINGERPRINT, { error: rec.error, answer_class: rec.answer_class }),
-    attempts: rec.attempts,
-  }));
+  const samples = restoreSamples(file.samples);
 
   return {
     ...file,
     result: evaluateL1({ samples, refSubject, selection, calibration }),
     rejudged: true,
     meta: { ...file.meta, t_pass: calibration.t_pass, t_fail: calibration.t_fail, t_pass_basis: calibration.t_pass_basis },
+  };
+}
+
+/**
+ * The same promise, one tier up. L2 had no re-judging path at all, so every fix to the
+ * verdict logic left 180 already-paid-for probes per endpoint stranded at the conclusion
+ * they happened to reach on the day — and the comparison table read those stored verdicts
+ * verbatim, which is the exact failure L1's rejudge was written to end.
+ *
+ * @param {object} file  a parsed l2 result file
+ * @returns {object} the file with `result` recomputed, plus `rejudged: true`
+ */
+export function rejudgeL2(file) {
+  const subject = file.meta?.model;
+  const control = file.meta?.control;
+  if (!subject || !control || !Array.isArray(file.meta?.cells)) return file;
+
+  const fpProtocol = file.meta?.fingerprint_protocol ?? DEFAULT_PROTOCOL;
+  const refSubject = loadReference(subject, fpProtocol);
+  const refControl = loadReference(control, fpProtocol);
+
+  const samples = restoreSamples(file.samples);
+  // The two sides are stored in one array and are told apart by `model` — the same split
+  // evaluateL2 needs in order to keep two denominators (判定语义④).
+  const subjectSamples = samples.filter((s) => s.model === subject);
+  const controlSamples = samples.filter((s) => s.model === control);
+
+  const selection = {
+    cells: file.meta.cells.map((cell) => {
+      const [task_id, lang] = cell.split('|');
+      return { cell, task_id, lang };
+    }),
+    repsPerCell: file.meta.reps_per_cell,
+  };
+
+  return {
+    ...file,
+    result: {
+      ...evaluateL2({ subjectSamples, controlSamples, refSubject, refControl, selection }),
+      // Not part of the verdict; carried through so the report keeps its effort proxy.
+      reasoning_rate: file.result?.reasoning_rate ?? null,
+    },
+    rejudged: true,
   };
 }

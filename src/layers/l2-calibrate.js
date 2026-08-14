@@ -81,7 +81,9 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
   const base = {
     subject: r.subject, control: r.control, live_cells: live.length,
     h: NaN, s: NaN, d: NaN, h_c: NaN, s_c: NaN, d_c: NaN,
-    ratio: NaN, ratio_ci_lo: NaN, ratio_ci_hi: NaN, noise_floor: NaN, low_confidence: false,
+    ratio: NaN, ratio_ci_lo: NaN, ratio_ci_hi: NaN,
+    sd_ratio: NaN, sd_ci_lo: NaN, sd_ci_hi: NaN, denominator_basis: null,
+    noise_floor: NaN, low_confidence: false,
   };
 
   for (const side of ['subject', 'control']) {
@@ -114,40 +116,79 @@ export function evaluateL2({ subjectSamples, controlSamples, refSubject, refCont
   const d = meanOf(dPer);
   const [h_c, s_c, d_c] = [correct(h, floor), correct(s, floor), correct(d, floor)];
 
-  const ci = ratioCI(sPer, hPer);
+  // 🔴 The denominator gets a floor. A harness term below the noise floor is not a failed
+  // measurement — it is a measured absence: the control model came back indistinguishable
+  // on both sides, which is the BEST case a control can produce. The old code read that as
+  // "this run measured nothing" and abandoned the run, throwing away relay-C's S_c/D_c = 0.07
+  // (a subject seven per cent of the way to the different-model scale) as unjudgeable.
+  //
+  // What actually breaks in that regime is the ratio, not the evidence. So the question
+  // becomes: is the gap explained by the harness, OR is it inside what the measurement can
+  // resolve at all — whichever is more generous. Below the floor there is nothing left to
+  // explain either way.
+  const denominatorBasis = h_c >= floor ? 'harness' : 'noise floor';
+
+  // Both intervals describe exactly the quantity their test compares — same correction,
+  // same floor, one definition (see stats/bootstrap.js). `denomFloor` is where the
+  // flooring actually happens; there is no second copy of it in the verdict below.
+  const ciOpts = { correctBy: floor, denomFloor: floor };
+  const ci = ratioCI(sPer, hPer, ciOpts);
+  const ciSD = ratioCI(sPer, dPer, ciOpts);
 
   const withNumbers = {
     ...base, h, s, d, h_c, s_c, d_c, noise_floor: floor,
     ratio: ci.ratio, ratio_ci_lo: ci.lo, ratio_ci_hi: ci.hi,
+    sd_ratio: ciSD.ratio, sd_ci_lo: ciSD.lo, sd_ci_hi: ciSD.hi,
+    denominator_basis: denominatorBasis,
     per_cell: { h: hPer, s: sPer, d: dPer }, dropped_cells: dropped,
     low_confidence: gate.lowConfidence,
   };
 
-  // 🔴 The ratio tests only mean anything while H_c is meaningfully positive. When the
-  // control model is near-identical on both sides — self-comparison, or two gateways
-  // that happen to wrap alike — S_c ≤ 1.5 × H_c degenerates into 0 ≤ 0 and the
-  // bootstrap interval spreads to nonsense. That is "this run measured nothing", not
-  // "consistent", and calling it consistent would be the most dangerous false green
-  // this tool could produce.
-  if (!(h_c > floor * 0.25)) {
-    return assertL2Result(makeL2Result({
-      ...withNumbers, verdict: VERDICT.INCONCLUSIVE,
-      reason: `harness term H_c (${h_c.toFixed(4)}) is not meaningfully above the noise floor ` +
-              `(${floor.toFixed(4)}) — the ratio tests have no denominator to work with`,
-    }));
-  }
+  // 🔴 One symmetric rule: a verdict needs its WHOLE interval on the right side of the
+  // line. Consistent when the interval sits entirely below the harness line, suspect when
+  // it sits entirely above the different-model line, otherwise inconclusive.
+  //
+  // Only `consistent` used to carry that requirement — `suspect` convicted on a point
+  // estimate. The asymmetry ran the wrong way for this tool: the expensive error is
+  // accusing an honest relay, yet acquittal needed an interval and conviction did not.
+  // Two runs of one endpoint an hour apart landed at S_c/D_c 1.04 and 0.64 and were
+  // written up as "suspect" and "inconclusive" — one sample either side of a line
+  // neither run could resolve.
+  //
+  // The old point tests are gone rather than kept as belt-and-braces: with the interval
+  // now describing the same quantity, `s_c ≤ 1.5 × denom` is exactly `ci.ratio ≤ 1.5`,
+  // which `ci.hi < 1.5` already implies. They could not fail, and a rule with a clause
+  // that cannot fail invites the reader to trust the wrong clause.
+
+  // D is the yardstick for "what a different model looks like". Inside the noise floor it
+  // is not a yardstick — that happens when the relay answers the same for both model
+  // names, which is its own kind of alarming but is not something S/D can measure.
+  const scaleUsable = d_c >= floor;
 
   let verdict;
   let reason = null;
-  if (s_c <= CONSISTENT_RATIO * h_c && ci.hi < CONSISTENT_RATIO) {
+  if (ci.hi < CONSISTENT_RATIO) {
     verdict = VERDICT.CONSISTENT;
-  } else if (d_c > 0 && s_c >= SUSPECT_RATIO * d_c) {
+    if (denominatorBasis === 'noise floor') {
+      reason = `the harness term is below the noise floor (${floor.toFixed(4)}), so the gap is judged ` +
+               `against the floor itself: S_c ${s_c.toFixed(4)} is inside what this many samples resolve`;
+    }
+  } else if (scaleUsable && ciSD.lo >= SUSPECT_RATIO) {
     verdict = VERDICT.SUSPECT;
   } else {
     verdict = VERDICT.INCONCLUSIVE;
-    reason = s_c <= CONSISTENT_RATIO * h_c
-      ? `point estimate passes but the 90% interval reaches ${ci.hi.toFixed(2)} — add reps or cells`
-      : 'between the harness scale and the different-model scale — add reps or cells';
+    reason = !scaleUsable
+      ? `⚠️ this relay answers alike for BOTH model names: the different-model scale D_c ` +
+        `(${d_c.toFixed(4)}) is inside the noise floor (${floor.toFixed(4)}), while the reference ` +
+        `endpoint tells the two apart. That is alarming in itself — but it also removes the ` +
+        `scale a substitution would be measured against, so this is not a verdict. Screen the ` +
+        `control model in its own right to find out which of the two names is being served.`
+      : ciSD.ratio >= SUSPECT_RATIO
+        ? `S_c/D_c point estimate ${ciSD.ratio.toFixed(2)} clears ${SUSPECT_RATIO} but the 90% ` +
+          `interval falls to ${ciSD.lo.toFixed(2)} — not enough to accuse. Add reps or cells.`
+        : `between the harness scale (S/H ${ci.ratio.toFixed(2)}, needs its whole interval below ` +
+          `${CONSISTENT_RATIO}; reaches ${ci.hi.toFixed(2)}) and the different-model scale ` +
+          `(S/D ${ciSD.ratio.toFixed(2)}, needs ≥ ${SUSPECT_RATIO}) — add reps or cells`;
   }
 
   return assertL2Result(makeL2Result({ ...withNumbers, verdict, reason }));
