@@ -114,6 +114,10 @@ code, kbd { font-family: var(--font-mono); font-size: 0.9em; }
   max-width: 22ch; text-wrap: balance;
 }
 .hero-title em { font-style: normal; color: var(--brass); }
+/* Keep the emphasised phrase whole where there is room: `balance` was breaking
+   「它说的那个模型」 after its first character. Below this width the phrase is wider than
+   the viewport, so it has to be allowed to wrap. */
+@media (min-width: 760px) { .hero-title em { white-space: nowrap; } }
 .hero-lede { font-size: var(--step-1); color: var(--ink-dim); max-width: 54ch; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: var(--gap-2); margin-top: var(--gap-4); align-items: center; }
 
