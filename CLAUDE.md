@@ -211,6 +211,9 @@ npm run compare -- --sort latency_p50   # 换排序键；不带则按真实性�
 # 0 请求：按**当前**口径重判存量结果（改了阈值 / 参照 / 归一化之后必跑）
 node scripts/rejudge.js
 
+# 0 请求：型号地图——参照两两距离 + 各自噪声地板，看哪些型号本方法分不出来
+node scripts/model-matrix.js [--fp-protocol responses] [--json var/model-matrix.json]
+
 # 采 / 刷新正版参照（只能在已知正版端点上跑）
 node scripts/refresh-reference.js --endpoint <正版 id> --model <m> \
   [--cells l1|all|full] [--fp-protocol chat|responses]
@@ -282,6 +285,8 @@ src/
     result-file.js      结果文件写入 + L0a/L0b 合并（两个计数求和）
     genuine-history.js  从结果文件收集正版端点实测 S（用于实测标定 T_pass）
     compare-table.js    横评表：L2 优先于 L1、排序序、逐层计数求和
+    model-matrix.js     参照两两距离矩阵。🔴 **对角线放各模型自己的噪声地板**，
+                        不是 0——没有它，读者无从判断 0.18 是大还是小
   probes/               reasoning.js（生成式+求解器）/ knowledge.js（策展）/ juice.js
 scripts/
   fetch-upstream-data.js    从 Zenodo 拉数据（`--verify` 只校验不下载）
@@ -294,6 +299,7 @@ scripts/
   probe-endpoint.js         运维：单端点采样 + 对论文 176 模型库排名
   calibrate-probes.js       在正版端点上校准推理题区分度（六档）
   quick-check.js            【reasoning 巡检主入口】查降档
+  model-matrix.js           【型号地图】参照两两距离热力图，0 请求；`--json` 出 UI 用数据
   compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
   calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
@@ -305,10 +311,10 @@ probes/              knowledge.json（知识题库）+ calibration.json（推理
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/                16 个 suite / **163 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
+test/                17 个 suite / **168 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
                      runner / l0-profile / l1-screen / l2-verdict / cells / noise / guards /
                      bootstrap / config / golden-guard / fingerprint-protocol /
-                     reference-store / probes
+                     reference-store / model-matrix / probes
 test/fixtures/       🔴 **冻结快照**：reference/（口径回归测试的输入，与活的 reference/ 解耦）、
                      chat-request-snapshot.json（I-1 字节锚点）、responses-sample.json（真实响应体）
 ```
