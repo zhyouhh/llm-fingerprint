@@ -318,10 +318,12 @@ probes/              knowledge.json（知识题库）+ calibration.json（推理
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/                17 个 suite / **172 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
-                     runner / l0-profile / l1-screen / l2-verdict / cells / noise / guards /
-                     bootstrap / config / golden-guard / fingerprint-protocol /
-                     reference-store / model-matrix / probes
+test/                **18 个文件 / 172 项全绿**（`npm test` 跑 `test/**/*.test.js`）：
+                     golden/g0-normalize · g1-jsd · g2-verification（复现论文数字）+
+                     contract（判定语义 + I-N）/ runner / l0-profile / l1-screen /
+                     l2-verdict / cells / noise / guards / bootstrap / config /
+                     golden-guard / fingerprint-protocol / reference-store /
+                     model-matrix / probes
 test/fixtures/       🔴 **冻结快照**：reference/（口径回归测试的输入，与活的 reference/ 解耦）、
                      chat-request-snapshot.json（I-1 字节锚点）、responses-sample.json（真实响应体）
 ```

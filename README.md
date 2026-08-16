@@ -6,7 +6,7 @@
 私人自用工具。完整设计、方法、实测结论、runbook 全在 **[CLAUDE.md](./CLAUDE.md)**。
 
 > **状态（2026-08-14）**：按 [实施 plan](./docs/plans/2026-08-11-relay-picker-plan.md) 完成阶段 0-6、8，
-> 163 项测试全绿。**唯一没做的是 reasoning 降档巡检**——下面标 🚧 的就是它。
+> 172 项测试全绿。**唯一没做的是 reasoning 降档巡检**——下面标 🚧 的就是它。
 
 ## 它抓到过什么（2026-08-14 实测六家中转）
 
@@ -52,15 +52,28 @@ node scripts/verify-relay.js --endpoint <id>   # ✅ L2 校准比对——L1 报
 #   --no-control 省一半，但外壳未测、且抓不到"两个模型名发同一个东西"。首测别用
 npm run compare                                # ✅ 横评表（读已有结果，0 请求）
 node scripts/rejudge.js                        # ✅ 按当前口径重判存量结果（0 请求）
+node scripts/model-matrix.js                   # ✅ 型号地图：参照两两距离 + 各自噪声地板
+node scripts/identify.js                       # ✅ 指认：这个端点发的到底是哪个型号
 node scripts/quick-check.js  --endpoint <id>   # 🚧 reasoning 降档巡检（未实现）
 ```
 
-**采参照**（只能在已知正版端点上跑，一次性投入）：
+**采参照**（只能在 config 里标了 `"genuine": true` 的端点上跑，一次性投入）：
 
 ```bash
 node scripts/refresh-reference.js --endpoint <正版 id> --model <m> --cells full \
   --fp-protocol responses    # 40 格；L2 的精度主要来自格子数，不是采样数
 ```
+
+已采齐 **OpenAI 官方 10 个可采型号**（`reference/responses/`，约 $1.4）。「可采」= 接受
+`reasoning:{effort:'none'}`，实测而非按名字猜：官方 126 个模型里 52 个是 LLM，其中
+
+- **10 个可采** —— 5.1 / 5.2 / 5.3-codex / 5.4 / 5.4-mini / 5.4-nano / 5.5 / 5.6-sol / 5.6-luna / 5.6-terra
+- ~20 个**不支持 `effort` 参数**（gpt-4o / 3.5 等非推理款）——去掉该参数就能采，但那是第三种探针口径，暂未做
+- ~16 个**不接受 `none`**（gpt-5 / o1 / o3 / 全部 `-pro`）——最低档也会把 16 token 烧在隐藏推理上，**结构上不可能**
+- ~6 个 `/models` 列了但 Responses 返回 404
+
+**这 10 个两两可分**：45 对里最近的一对（`gpt-5.3-codex ↔ gpt-5.4` = 0.143）仍是噪声地板的
+4.6 倍。跑 `node scripts/model-matrix.js` 看完整地图。
 
 ⚠️ **指纹层有两条协议，参照与待测必须一致**（代码会拦）。默认 `chat`（论文口径）；
 要拿 **OpenAI 官方 API** 当参照就得加 `--fp-protocol responses`——官方不接受 chat 口径
@@ -71,7 +84,7 @@ node scripts/refresh-reference.js --endpoint <正版 id> --model <m> --cells ful
 | 能查 | 靠哪层 |
 |---|---|
 | 换成同厂别的模型（实测：luna 冒充 sol） | L2 校准指纹（H/S/D 对照校准法） |
-| **指认换成了哪一个**（不只是"不对"） | 对多份官方参照同时量距离——需要先采候选型号的参照 |
+| **指认换成了哪一个**（不只是"不对"） | `identify.js`——对全部 10 份官方参照量距离，报最像谁 |
 | 区分「外壳不同」与「模型不同」 | **只有 L2 能**——L1 的距离里混着外壳，实测两次误判都源于此 |
 | **粘性轮换**（某时段整段发假货） | 跨时间多次重跑 L1——**单次绿灯只代表那一次** |
 | 偷偷降 reasoning 档 | reasoning 巡检 🚧 **未实现**——指纹层原理上看不见 effort |
@@ -87,6 +100,10 @@ node scripts/refresh-reference.js --endpoint <正版 id> --model <m> --cells ful
   ⚠️ 这跟**粘性轮换**不是一回事：relay-A 是整段时间发同一个后端（一格 15 次全落同一边），
   那种抓得到，代价是**必须跨时间多测几次**——它单次跑是通过的
 - **靠一次检测给端点发通行证**——见上；一次绿灯只说明**那一次**拿到的是真货
+- **认出手上没有参照的型号**——`identify.js` 只认得出 `reference/` 里有的那些。分布不属于任何
+  已采型号时它报「不确定」，**不会**把最近的那个说成答案
+- **区分 `gpt-5.4` 与 `gpt-5.3-codex`**——地图上最难的一对（0.143）。实测两个正版端点的 5.4
+  都只到 1.5× 分离度，工具照实报「不确定」
 
 许可：MIT（见 [LICENSE](./LICENSE)）。复用的上游代码与数据署名见
 [vendor/pamela/ATTRIBUTION.md](./vendor/pamela/ATTRIBUTION.md)。
