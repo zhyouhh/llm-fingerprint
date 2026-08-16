@@ -67,3 +67,38 @@ export function classifyPair(distance, floorA, floorB) {
   if (distance <= bar * 2) return 'near';
   return 'distinct';
 }
+
+/** Runner-up must be this many times further before a name goes on a distribution. */
+export const SEPARATION = 2.0;
+
+/**
+ * Name a measured distribution by finding which reference it is shaped like.
+ *
+ * 🔴 Decided on SEPARATION from the runner-up, never on the absolute distance.
+ *
+ * The absolute distance carries the relay's harness, and there is no control model here to
+ * subtract it with — a gateway measures 0.154 from the model it is genuinely serving. Judged
+ * against a noise floor that reads "matches nothing", which is how the first version of this
+ * labelled all twelve measured rows, four of which L2 had already proven genuine.
+ *
+ * The ratio to the runner-up does not carry it: a harness pushes every candidate out by
+ * roughly the same amount, so it cancels. What survives is which reference the distribution
+ * is actually shaped like.
+ *
+ * @param {object} measured  cell → distribution
+ * @param {Array<{model: string, fingerprint: object}>} refs
+ * @returns {{best, runnerUp, separation, named: boolean, ranked}}
+ */
+export function identify(measured, refs, { separation = SEPARATION } = {}) {
+  const ranked = refs
+    .map((r) => ({ model: r.model, ...meanJsd(measured, r.fingerprint ?? {}) }))
+    .filter((x) => Number.isFinite(x.value))
+    .sort((a, b) => a.value - b.value);
+  if (!ranked.length) return { best: null, runnerUp: null, separation: NaN, named: false, ranked };
+  const best = ranked[0];
+  const runnerUp = ranked[1] ?? null;
+  // A single candidate cannot be "separated" from anything. Naming on it would mean
+  // "the only model we happen to hold a reference for", which is not an identification.
+  const sep = runnerUp ? runnerUp.value / best.value : NaN;
+  return { best, runnerUp, separation: sep, named: Number.isFinite(sep) && sep >= separation, ranked };
+}

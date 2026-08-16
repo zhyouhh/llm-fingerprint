@@ -214,6 +214,9 @@ node scripts/rejudge.js
 # 0 请求：型号地图——参照两两距离 + 各自噪声地板，看哪些型号本方法分不出来
 node scripts/model-matrix.js [--fp-protocol responses] [--json var/model-matrix.json]
 
+# 0 请求：指认——把存量实采分布放到地图上，回答"那它到底是哪个型号"
+node scripts/identify.js [--fp-protocol responses] [--endpoint a,b]
+
 # 采 / 刷新正版参照（只能在已知正版端点上跑）
 node scripts/refresh-reference.js --endpoint <正版 id> --model <m> \
   [--cells l1|all|full] [--fp-protocol chat|responses]
@@ -285,8 +288,11 @@ src/
     result-file.js      结果文件写入 + L0a/L0b 合并（两个计数求和）
     genuine-history.js  从结果文件收集正版端点实测 S（用于实测标定 T_pass）
     compare-table.js    横评表：L2 优先于 L1、排序序、逐层计数求和
-    model-matrix.js     参照两两距离矩阵。🔴 **对角线放各模型自己的噪声地板**，
-                        不是 0——没有它，读者无从判断 0.18 是大还是小
+    model-matrix.js     参照两两距离矩阵 + `identify()`。
+                        🔴 **对角线放各模型自己的噪声地板**，不是 0——没有它读者
+                        无从判断 0.18 是大还是小；
+                        🔴 **指认看「与次近的分离度」，不看绝对距离**——绝对距离含外壳
+                        （自建网关离它真发的模型也有 0.154），比值把外壳约掉了
   probes/               reasoning.js（生成式+求解器）/ knowledge.js（策展）/ juice.js
 scripts/
   fetch-upstream-data.js    从 Zenodo 拉数据（`--verify` 只校验不下载）
@@ -300,6 +306,7 @@ scripts/
   calibrate-probes.js       在正版端点上校准推理题区分度（六档）
   quick-check.js            【reasoning 巡检主入口】查降档
   model-matrix.js           【型号地图】参照两两距离热力图，0 请求；`--json` 出 UI 用数据
+  identify.js               【指认】把存量实采分布放到地图上，报"这到底是哪个型号"，0 请求
   compare-baselines.js      ⚠️ 已弃用，阶段 6 删除（功能并入横评聚合层）
   calibrated-compare.js     ⚠️ 已弃用，阶段 6 删除（同上）
 vendor/pamela/       上游 MIT 代码，逐字复用，不改写（含 ATTRIBUTION.md）
@@ -311,7 +318,7 @@ probes/              knowledge.json（知识题库）+ calibration.json（推理
 data/upstream/       Zenodo 原始数据（gitignored，~500MB 解压，npm run fetch-data 获取）
 baselines/           采样产物（gitignored，含端点URL）
 var/runs/            结果文件 `<id>__<tier>__<ts>.json`（gitignored，绝不含 key）
-test/                17 个 suite / **168 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
+test/                17 个 suite / **172 项全绿**：golden G0-G2、contract（判定语义 + I-N）、
                      runner / l0-profile / l1-screen / l2-verdict / cells / noise / guards /
                      bootstrap / config / golden-guard / fingerprint-protocol /
                      reference-store / model-matrix / probes
@@ -411,6 +418,34 @@ golden test 保证，比文字 review 硬。
 
 ⚠️ **注入量与外壳效应无关，再次印证**：relay-D 注入 6581 token（六家最重）而 H_c 仅 0.0055；
 relay-E 注入 7 token 而 H_c 为 0。**H 要靠采对照量，不能从注入量推**。
+
+### 型号地图：官方 10 个可采型号两两可分（2026-08-17）
+
+官方 API 共 126 个模型，去掉生图/语音/嵌入等 44 个，LLM 82 个（含 30 个日期快照别名），
+**去重后 52 个**。实测「能不能采」而非按名字猜（硬约束要求），结果：
+
+| 结果 | 数量 | 原因 |
+|---|---|---|
+| ✅ **可采** | **10** | 接受 `reasoning:{effort:'none'}`，全是现代型号 |
+| ❌ `effort` 参数整个不支持 | ~20 | 非推理模型（gpt-4o / 4-turbo / 3.5-*）。**去掉 `reasoning` 就能采**，需第三种探针变体 |
+| ❌ 支持 `effort` 但不收 `none` | ~16 | gpt-5 / o1 / o3 / o4-mini / 所有 `-pro`。最低档也会把 16 token 烧在隐藏推理上，**结构上不可能** |
+| ❌ 404 | ~6 | `/models` 列了但 Responses 不服务，幽灵条目 |
+
+`gpt-5-pro` 只接受 `effort:'high'`——永远采不了。
+
+**10 个全部采齐**（40 格 × 30 次，`reference/responses/`），两两距离见 `model-matrix.js`：
+
+**最近的一对是 `gpt-5.3-codex ↔ gpt-5.4` = 0.1427**，而它们的噪声地板是 0.031 / 0.027
+——仍是地板的 **4.6 倍**。**45 对无一落入噪声地板 → 本方法能区分官方全部现代型号。**
+
+各模型地板差异很大（terra 0.019、5.4 0.027、sol 0.046、nano 0.059），**不能共用一个阈值**，
+所以 `classifyPair` 取两者中较大的。
+
+⚠️ **指认的判据是「与次近的分离度」，不是绝对距离**。绝对距离含外壳而指认层没有对照可减
+——自建网关离它**真正在发**的模型也有 0.154。第一版按噪声地板判，把 12 行实采**全部**标成
+「都不像」，其中 4 个是 L2 已证明的正版。改用比值后 10/12 正确命名，剩 2 行标「不确定」，
+而那 2 行恰好都是 `gpt-5.4 vs gpt-5.3-codex`——地图上最难分的一对。**工具在最难处说不确定，
+是对的行为。**
 
 ### 🔴🔴🔴 指名道姓：掺的是 `gpt-5.6-luna`（同代兄弟型号）
 
