@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.wrangler/
+
+# Build products of `npm run data` — regenerated from reference/ on every build, and the
+# build refuses to write them unless they reproduce the full references bit for bit.
+public/data/

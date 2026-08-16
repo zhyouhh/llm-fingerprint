@@ -15,7 +15,11 @@
 // normaliser with raw:''. Deleting the retry without rewriting this branch is the one
 // mistake in this file that would not announce itself.
 
-import { loadVendorConfig, studyATasks, normalizeRecords } from '../normalize/index.js';
+// 🔴 core.js / vendor-config.js rather than normalize/index.js: index.js pulls in
+// `node:fs` for the run-directory reader, which the browser build cannot bundle. The
+// normalisation itself is identical — same module, one import hop shorter.
+import { studyATasks, normalizeRecords } from '../normalize/core.js';
+import { loadVendorConfig } from '../normalize/vendor-config.js';
 import { SAMPLE_KIND, classifySample, makeSample, countersFromSamples } from '../contracts.js';
 
 /** Default quick battery: 4 tasks × 2 languages. Diverse in answer space and script. */
@@ -109,7 +113,14 @@ export async function runBattery({ probe, model, cells, reps = 30, concurrency =
         key: `${model}|${job.task_id}|${job.lang}|1|${job.rep}`,
       };
       done++;
-      if (onProgress && done % 10 === 0) onProgress({ done, total: jobs.length });
+      // Every sample, not every tenth. An L1 screen is 15 probes, so a stride of 10 let
+      // the web UI's live cell grid update exactly once; the CLI writers read only
+      // {done, total, model} and ignore the rest, and a few hundred extra \r writes cost
+      // nothing next to the requests they are reporting on.
+      //
+      // `ok` is transport-level only — whether the answer is VALID is decided by the
+      // normalisation pass below, which cannot run sample by sample.
+      if (onProgress) onProgress({ done, total: jobs.length, cell: `${job.task_id}|${job.lang}`, ok: !r.error });
     }
   }
 

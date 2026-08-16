@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- A four-cell grid with one cell out of step: the whole method in 32 pixels. -->
+  <rect width="32" height="32" rx="6" fill="#0F171C"/>
+  <g fill="#2E7A75">
+    <rect x="6"  y="6"  width="8" height="8" rx="1.5"/>
+    <rect x="18" y="6"  width="8" height="8" rx="1.5"/>
+    <rect x="6"  y="18" width="8" height="8" rx="1.5"/>
+  </g>
+  <rect x="18" y="18" width="8" height="8" rx="1.5" fill="#C89B3C"/>
+</svg>

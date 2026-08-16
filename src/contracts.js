@@ -549,6 +549,31 @@ export function makeCollection({ result, samples, meta = {} }) {
   });
 }
 
+/**
+ * Merge collections that describe one endpoint at one moment into a single envelope
+ * (待消解 #8) — L0a and L0b are the case that exists.
+ *
+ * They are separate collections because they cost different things and can fail
+ * independently, but the budget check ("41 probes for a screen") only adds up if the
+ * merged meta carries the SUM. Letting each half keep its own meta is how that check ends
+ * up reading 2 or 24.
+ *
+ * 🔴 Lives here, beside makeCollection, rather than in layers/result-file.js where it
+ * started: result-file.js imports `node:fs`, so the web build could not reach it and
+ * would have needed a second copy of the merge — and then the two產物 shapes drift and
+ * nothing says so. Same reason `rates` and `countersFromSamples` are here.
+ */
+export function mergeCollections(parts, { resultKeys }) {
+  const samples = parts.flatMap((p) => (p ? p.samples : []));
+  const result = {};
+  parts.forEach((p, i) => { result[resultKeys[i]] = p ? p.result : null; });
+  return {
+    result,
+    samples,
+    meta: assertCounters({ ...countersFromSamples(samples) }),
+  };
+}
+
 export function assertCollection(collection) {
   if (!collection || typeof collection !== 'object') usageError('collection must be an object');
   if (!('result' in collection)) usageError('collection is missing `result`');

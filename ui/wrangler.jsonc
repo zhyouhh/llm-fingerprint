@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "llm-fingerprint",
+  "main": "./worker/index.js",
+  // Pinned to the workerd build wrangler ships with; a later date is valid in production
+  // but makes `vite dev` refuse to start (ERR_FUTURE_COMPATIBILITY_DATE), so the two would
+  // no longer be the same runtime. Bump it when wrangler is upgraded, not before.
+  "compatibility_date": "2026-08-11",
+  "assets": {
+    // No "directory": the Cloudflare Vite plugin points this at the client build output.
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Without this, a navigation to /p/... would hit the SPA fallback instead of the
+    // proxy. The list is exhaustive: every other path is a static file or the app shell.
+    "run_worker_first": ["/p/*"]
+  },
+  "routes": [
+    { "pattern": "llmfingerprint.z0y0h.work", "custom_domain": true }
+  ],
+  "observability": { "enabled": true },
+  // A full L2 is ~870 probes at concurrency 6, i.e. bursts of a few hundred per minute
+  // from one visitor. 1200/min leaves room for that plus a retry storm, while still
+  // capping what a single address can push through the proxy.
+  "ratelimits": [
+    {
+      "name": "PROXY_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 1200, "period": 60 }
+    }
+  ]
+}

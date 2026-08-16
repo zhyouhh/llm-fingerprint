@@ -3,10 +3,15 @@
 判别第三方中转 API 给的模型是不是它声称的那个——用单 token 输出分布指纹，
 复现自 [arXiv:2607.10252](https://arxiv.org/abs/2607.10252)。
 
-私人自用工具。完整设计、方法、实测结论、runbook 全在 **[CLAUDE.md](./CLAUDE.md)**。
+**网页版：https://llmfingerprint.z0y0h.work** —— 输入中转 URL 和你自己的 key 就能测，
+计算全在浏览器里跑（服务端只做一层无状态转发，结构上没有能存 key 的地方）。
+不输入任何东西也能看[型号地图](https://llmfingerprint.z0y0h.work/map)：官方 10 个型号两两能不能分开。
 
-> **状态（2026-08-14）**：按 [实施 plan](./docs/plans/2026-08-11-relay-picker-plan.md) 完成阶段 0-6、8，
-> 172 项测试全绿。**唯一没做的是 reasoning 降档巡检**——下面标 🚧 的就是它。
+命令行版是同一份判定代码。完整设计、方法、实测结论、runbook 全在 **[CLAUDE.md](./CLAUDE.md)**。
+
+> **状态（2026-08-17）**：CLI 按 [实施 plan](./docs/plans/2026-08-11-relay-picker-plan.md) 完成阶段 0-6、8；
+> 网页版已上线（见 [`ui/CLAUDE.md`](./ui/CLAUDE.md)）。主项目 172 项 + `ui/` 16 项测试全绿。
+> **唯一没做的是 reasoning 降档巡检**——下面标 🚧 的就是它。
 
 ## 它抓到过什么（2026-08-14 实测六家中转）
 
@@ -36,6 +41,19 @@ npm run fetch-data       # ✅ 拉论文数据集（首次，~52MB 下载 / ~500
 npm run verify-data      # ✅ 只校验数据完整性，不下载；缺什么列什么
 npm test                 # ✅ 全部测试，含复现论文 AUC 0.971342 的 golden test
 npm run test:golden      # ✅ 只跑 golden test（pass 13）
+```
+
+**网页版**（同一份判定代码，跑在浏览器里）：
+
+```bash
+npm --prefix ui install
+npm --prefix ui run data     # 参照 2.3MB → 157KB，并逐位自证瘦身无损
+npm --prefix ui run dev      # 本地 vite + workerd
+npm --prefix ui test         # 16 项：代理守卫 / URL 规范化 / 瘦身无损 / 色带
+npm --prefix ui run deploy   # → llmfingerprint.z0y0h.work
+
+# 花额度前先拿假中转端到端跑通整条路
+node ui/scripts/stub-relay.js --serves 'gpt-5.6-sol=gpt-5.6-luna' --port 8791
 ```
 
 **端点怎么配**：候选端点写在 [`config/endpoints.json`](./config/endpoints.json)

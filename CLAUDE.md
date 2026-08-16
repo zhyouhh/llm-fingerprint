@@ -181,9 +181,23 @@ Node.js ≥ 24（实测 v26.3.0；`package.json` 的 `engines.node` 即 `">=24"`
 下界取 24 的理由：`node:sqlite`（里程碑 2 的存储层）在 22.x 需要 `--experimental-sqlite` flag，
 而本项目不给代码加 flag（部署时 Docker / CLI / 测试三处都要带，是三个新的失败点）。
 **`src/` 与 `scripts/` 零运行时依赖**（golden test 覆盖的正确性承重部分，跟上游一致）；
-**`ui/`（里程碑 2）允许引入依赖，引入时须在本节登记**。当前全项目依赖数为 0。
-原生 `fetch` + `node:test`。
+**`ui/` 允许引入依赖，引入时须在本节登记**。原生 `fetch` + `node:test`。
 不引入统计库 —— JSD / ROC / EER 自己实现，正确性由 golden test 保证。
+
+**已登记的依赖（全部是 `ui/` 的 devDependencies，运行时依然为 0）**：
+
+| 包 | 用途 | 为什么不能没有 |
+|---|---|---|
+| `vite` | 打包 + dev server | 浏览器要把 `src/` 的 ESM 与两个 vendor JSON 打成一份产物 |
+| `wrangler` | 部署 Worker | Cloudflare 官方 CLI |
+| `@cloudflare/vite-plugin` | dev 时在 workerd 里真跑 Worker | 否则代理逻辑得写第二遍给 dev server 用 |
+
+网页产物本身**不含任何第三方运行时代码**：热力图、区间条、DOM 构造全是手写（`ui/src/ui/dom.js`
+是 40 行的 `h()`）。不上前端框架的理由是奥卡姆——三个视图、单向数据流，reconciler 不划算。
+
+⚠️ **`ui/wrangler.jsonc` 的 `compatibility_date` 钉在本地 workerd 支持的日期**（当前 2026-08-11）。
+写成今天会让 `vite dev` 直接拒绝启动（`ERR_FUTURE_COMPATIBILITY_DATE`），于是本地与线上跑的
+不再是同一个运行时。升级 wrangler 时才跟着抬。
 
 ## 命令
 
@@ -326,11 +340,55 @@ test/                **18 个文件 / 172 项全绿**（`npm test` 跑 `test/**/
                      model-matrix / probes
 test/fixtures/       🔴 **冻结快照**：reference/（口径回归测试的输入，与活的 reference/ 解耦）、
                      chat-request-snapshot.json（I-1 字节锚点）、responses-sample.json（真实响应体）
+ui/                  **网页版**（已上线 llmfingerprint.z0y0h.work）。自带 CLAUDE.md，
+                     devDeps 仅 vite / wrangler / @cloudflare/vite-plugin，**运行时依赖仍为 0**
 ```
 
 **没有 CLI 统一入口**（曾设想 `cli.js`，未做）：各脚本单一职责、按需组合，加 wrapper 不划算（奥卡姆）。
-横评用 `compare.js` 遍历，那不是 wrapper 而是聚合层。**Web UI 属里程碑 2**，见 plan。
+横评用 `compare.js` 遍历，那不是 wrapper 而是聚合层。
 验新中转的标准顺序见「## Runbook」。
+
+## 网页版（`ui/`）—— 计算在浏览器，Worker 只转发
+
+上线于 **https://llmfingerprint.z0y0h.work**，公开访问，任何人可以拿自己的中转 URL + key 测。
+完整约定见 [`ui/CLAUDE.md`](ui/CLAUDE.md)；这里只记与主项目耦合的三条。
+
+**🔴 判定代码只有一份。** `ui/` 把 `src/` 直接打包进浏览器——归一化、JSD、噪声地板、
+`evaluateL1` / `evaluateL2` / `identify` 全部是 CLI 和 golden test 跑的同一份实现。
+`ui/src/core/` 只做接线（喂数据、构造 probe、存结果），**不许重写任何统计或判定**。
+
+**为此对 `src/` 做了三处解耦**（Node 侧签名与行为完全不变，172 项测试全绿）：
+
+| 改动 | 为什么 |
+|---|---|
+| `normalize/index.js` 拆出 `core.js`（纯）+ `vendor-config.js`（读两个 JSON） | 浏览器唯一跑不了的就是那两次 `readFileSync`。拆文件而不是复制一份浏览器版归一化 |
+| `mergeCollections` 从 `layers/result-file.js` 移到 `contracts.js` | 前者 import `node:fs`，浏览器够不着；它决定 L0 产物形状，两边必须一致 |
+| `runner.js` 的 `onProgress` 改成**逐样本**回调并带 `cell` / `ok` | L1 只有 15 个探针，10 步节流让网页的实时格子只更新一次 |
+
+构建时只换掉 `vendor-config.js` 一个模块（`ui/vite.config.js` 的 resolveId 钩子，比对**解析后的绝对路径**，
+不是 import 字符串——同一模块被两种相对路径 import，能同时命中的模式也能命中别的文件）。
+
+**参照瘦身是可证明无损的。** `ui/scripts/build-data.js` 把 2.3MB 参照压成 157KB
+（丢掉 `samples`，保留每格**按原顺序**的 valid 答案），然后对**每一个有序对**重跑
+`selectCells` / `noiseFloor` / `calibrateL1Thresholds` / `evaluateL1` / `evaluateL2` / `modelMatrix`，
+逐位不等就退出码 1、不写文件。顺序是硬要求：`drawWithReplacement` 按索引抽，重排会让噪声地板漂移。
+
+```bash
+npm --prefix ui install
+npm --prefix ui run data     # 生成参照 + 型号地图（含上面那条自证）
+npm --prefix ui run dev      # vite + workerd
+npm --prefix ui test         # 16 项：代理守卫 / URL 规范化 / 瘦身无损 / 色带
+npm --prefix ui run deploy   # build + wrangler deploy
+
+# 🔴 花额度前先用假中转端到端跑通（[[dry-run-before-spending]] 的常备工具）
+node ui/scripts/stub-relay.js --serves 'gpt-5.6-sol=gpt-5.6-luna' --port 8791 --oneapi
+node ui/scripts/stub-relay.js --serves gpt-5.6-luna        # 两个模型名都换 → D 塌陷
+```
+
+**stub 复现了两个真实场景，都验证通过**：① 只换 subject → S/D 点估计 0.72 越线但下界 0.57
+没越，判「证据不足」（对称性规则生效，旧逻辑会冤枉）；② subject 与 control 都换 → `D_c = 0.0000`，
+D 塌陷守卫在 consistent 分支**之前**拦下本会通过的 S/H 区间 [0.59, 0.94]。
+两次指认层都独立报出 `gpt-5.6-luna`（分离度 9.2× / 8.3×）。
 
 ## 命名约定
 
@@ -839,6 +897,35 @@ Ciudad de la Paz 属国）+ 1 道自适应糖果组合推理题。参数 `max_co
 ## 开发日志
 
 （按时间倒序，新的在上）
+
+- **2026-08-17** 里程碑 2 上线：**https://llmfingerprint.z0y0h.work**（公开、免费版 Cloudflare、$0/月）。
+  主项目 172 项 + `ui/` 16 项全绿。
+
+  **架构与 plan 里设想的不同，而且是更好的**：plan 写的是 `node:http` + SQLite + VPS + Tunnel + Access。
+  实际做成**计算全在浏览器、Worker 只做路径改写代理**。三个理由，按重要性：
+  ① **key 不落任何盘**——L2 要 870 次请求跑 7 分钟，放服务端后台任务（DO）就必须把 key 写进
+  DO storage 才能跨批次存活，那是真落盘；浏览器跑，服务端结构上没有能存 key 的地方。
+  ② 免费版 Workers 每请求只给 10ms CPU，跑不动 bootstrap，但纯转发绰绰有余。
+  ③ `src/` 是零依赖纯 ESM，Vite 直接打包，**判定逻辑只有一份**。
+  代价是关标签页任务就断，用 IndexedDB 存中间样本 + 离开拦截缓解，**没有做格子级断点续跑**
+  （要做干净必须让 `runBattery` 认识已采样本，否则就得在 `ui/` 重写一遍 `calibrateL2` 的编排）。
+
+  🔴 **本轮最贵的一个 bug 是 40 行 DOM helper 里的参数分派**：`h(spec, props, ...children)` 无条件把
+  第二个参数当 props，于是 `h('div', someNode)` 和 `h('span', '文字')` 的那个参数**被静默丢弃**——
+  `Object.entries()` 遍历 DOM 节点是空的，不报错。首屏因此丢了整个 header 和整个 hero，
+  控制台一片干净。与 [[silent-comparison-mismatch]] 同源：**不报错、只是让东西悄悄消失**。
+  修法是只把「原型为 `Object.prototype` 的纯对象」当 props，并补了 `ui/test/smoke.test.js`。
+
+  **stub 中转（`ui/scripts/stub-relay.js`）值得单独记一笔**——它让整个 run 流程可以零成本端到端跑，
+  并复现了存档里两个真实场景：只换 subject 时判「证据不足」（S/D 点估计 0.72 越线、下界 0.57 没越，
+  对称性规则生效），两个名字都换时 `D_c = 0.0000` 触发 D 塌陷守卫拦下本会通过的 S/H 区间。
+  这是 [[dry-run-before-spending]] 从「记得先跑一遍」升级成「仓库里有个现成的假中转」。
+
+  其它几条：**参照瘦身 2.3MB → 157KB 且可证明无损**（构建脚本对每个有序对重跑六条判定路径逐位比对，
+  不等就退出码 1）；热力图**编码分离度而非绝对距离**，色带边界按真实数据重排过一次
+  （原来 6 档里 3 档永远空着，整张图一个颜色）；`inconclusive` 用**蓝色不用琥珀**——
+  琥珀读作「出问题了」，而这个工具的立场是「证据不足是正当结论」，配色验证器随后也确认蓝色
+  才让三色在两种主题下都 CVD-safe。
 
 - **2026-08-14 下午** 判定层大修 + 实测确认掺假。**163 测试全绿**，16 个变异全杀。
 

@@ -12,7 +12,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertCollection, assertCounters, countersFromSamples } from '../contracts.js';
+import { assertCollection, countersFromSamples } from '../contracts.js';
+
+// Moved to contracts.js so the browser build can merge L0's two halves the same way —
+// re-exported here because every existing caller imports it from this module.
+export { mergeCollections } from '../contracts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const RUNS_DIR = path.join(ROOT, 'var', 'runs');
@@ -20,25 +24,6 @@ export const RUNS_DIR = path.join(ROOT, 'var', 'runs');
 /** UTC to the second — enough to order runs, short enough to read. */
 export function stamp(date) {
   return date.toISOString().replace(/\.\d{3}Z$/, 'Z').replace(/[:]/g, '-');
-}
-
-/**
- * Merge the two L0 halves into one file (待消解 #8).
- *
- * They are separate collections because they cost different things and can fail
- * independently — but they describe one endpoint at one moment, and the budget check
- * ("41 probes for a screen") only adds up if the file carries the SUM. Letting each half
- * write its own meta is how that check ends up reading 2 or 24.
- */
-export function mergeCollections(parts, { resultKeys }) {
-  const samples = parts.flatMap((p) => (p ? p.samples : []));
-  const result = {};
-  parts.forEach((p, i) => { result[resultKeys[i]] = p ? p.result : null; });
-  return {
-    result,
-    samples,
-    meta: assertCounters({ ...countersFromSamples(samples) }),
-  };
 }
 
 /**

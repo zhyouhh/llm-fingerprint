@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>指纹核验 · 你的中转还是它说的那个模型吗</title>
+    <meta name="description" content="用单 token 输出分布做指纹，检测第三方 LLM API 中转有没有偷换模型。计算全在浏览器里跑，API key 不经过任何存储。" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      // Applied before first paint so the theme never flashes.
+      try {
+        const saved = localStorage.getItem('llmfp-theme');
+        if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "llm-fingerprint-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Web front end for llm-fingerprint. The statistics run in the browser; the Worker only proxies.",
+  "scripts": {
+    "data": "node scripts/build-data.js",
+    "dev": "npm run data && vite dev",
+    "build": "npm run data && vite build",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.52.1",
+    "vite": "^8.2.1",
+    "wrangler": "^4.123.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "workerd@1.20260811.1": true
+  }
+}
