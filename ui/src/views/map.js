@@ -24,8 +24,8 @@ export async function view() {
     for (let j = i + 1; j < m.models.length; j += 1) {
       pairs.push({
         a: m.models[i], b: m.models[j], d: m.matrix[i][j],
-        bar: Math.max(m.floors[i], m.floors[j]),
-        klass: classifyPair(m.matrix[i][j], m.floors[i], m.floors[j]),
+        bar: m.pairFloors?.[i]?.[j] ?? NaN,
+        klass: classifyPair(m.matrix[i][j], m.pairFloors?.[i]?.[j] ?? NaN),
       });
     }
   }
@@ -64,9 +64,17 @@ export async function view() {
     h('div.note', { style: { marginTop: 'var(--gap-4)' } },
       h('div.note-title', '为什么对角线不是 0'),
       h('p', '同一个模型采两次，结果也不会完全一样——有限次采样本身就有散布。',
-        '这个散布就是噪声地板，放在对角线上，读者不需要知道本项目的任何阈值也能读这张表：',
-        h('br'),
-        '某个格子 ≈ 它所在行的对角线 → 分不出来；远大于两条对角线 → 真的是不同模型。')),
+        '这个散布就是噪声地板，放在对角线上，读者不需要知道本项目的任何阈值也能读这张表。'),
+      // 🔴 The old wording taught "compare a cell against the two diagonals on its row and
+      // column", which is what the code used to do and what this round removed: each
+      // diagonal is a mean over that model's WHOLE battery, while the cell is a mean over
+      // the pair's intersection. Two references with different coverage make those two
+      // different measurements, and a reader following the old instruction by hand
+      // reproduces the misclassification the code no longer makes.
+      h('p', '⚠️ 但判「分不分得出来」用的不是那两条对角线，而是',
+        h('strong', '这一对自己的地板'),
+        '——只在它们共有的格子上量。两份参照覆盖的格子不一样时，两者会差很多：',
+        '把每格的颜色当结论看，不要拿对角线自己心算。')),
 
     await examples(refs, m));
 }

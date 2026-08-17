@@ -37,7 +37,10 @@ export function buildChatProbeBody({ model, system, user }) {
  *   shape satisfies contracts.assertOutboundResult
  */
 export function createChatProbe({ baseUrl, apiKey, timeoutMs = DEFAULT_TIMEOUT_MS,
-                                  retry = { attempts: RETRY_ATTEMPTS_DEFAULT, baseDelayMs: RETRY_BASE_DELAY_MS_DEFAULT } }) {
+                                  retry = { attempts: RETRY_ATTEMPTS_DEFAULT, baseDelayMs: RETRY_BASE_DELAY_MS_DEFAULT },
+                                  // See createResponsesClient — a parked worker has to be able
+                                  // to hear Stop, and only `request` is holding the timer.
+                                  cancelled = null }) {
   const url = `${baseUrl}/chat/completions`;
 
   return async function probe({ model, system, user }) {
@@ -45,7 +48,7 @@ export function createChatProbe({ baseUrl, apiKey, timeoutMs = DEFAULT_TIMEOUT_M
       method: 'POST',
       headers: probeHeaders(apiKey),
       body: JSON.stringify(buildChatProbeBody({ model, system, user })),
-    }, { retry, timeoutMs });
+    }, { retry, timeoutMs, cancelled });
 
     const choice = res.body?.choices?.[0];
     return {
@@ -56,6 +59,10 @@ export function createChatProbe({ baseUrl, apiKey, timeoutMs = DEFAULT_TIMEOUT_M
       http_status: res.status,
       latency_ms: res.latency_ms,
       attempts: res.attempts,
+      // Carried, not dropped: a run that succeeded only because it waited out a quota
+      // must be able to say so. Without it, 120/120 valid after minutes of parking looks
+      // identical to 120/120 that never hit a limit.
+      rate_limited_ms: res.rate_limited_ms ?? 0,
       usage: res.body?.usage ?? null,
       // 待消解 #2: present-but-null, never absent — "the model echo changed mid-run" is
       // the sharpest account-rotation signal and this is its only producer.

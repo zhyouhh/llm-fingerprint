@@ -119,13 +119,42 @@ export async function exportAll() {
   return { format: EXPORT_FORMAT, exported_utc: new Date().toISOString(), runs: await listRuns() };
 }
 
+/**
+ * Why a record is unusable, or null when it is fine.
+ *
+ * 🔴 Checked HERE, at the door. The format/id check alone let a file through, said "imported
+ * successfully", and the damage only appeared on the next page load — where a record whose
+ * samples cannot be split into sides took the whole history view down with it, so the user
+ * could not reach the list to delete the thing that broke it. Refusing at import is the
+ * difference between "this file is no good" and "the app is broken".
+ */
+function importProblem(r) {
+  if (!r?.id) return 'no id';
+  if (r.tier === 'l0') return null;                       // L0 carries no fingerprint samples
+  if (!Array.isArray(r.samples)) return 'no samples array';
+  // The same rule `distributionOf` enforces: without a model or role on every row the two
+  // sides cannot be told apart, and averaging them is how the page and the CLI came to
+  // disagree about one file.
+  if (r.samples.length && !r.samples.every((s) => s?.model != null || s?.role != null)) {
+    return '样本行没有 model / role 标签，分不出待验侧和对照侧';
+  }
+  return null;
+}
+
 export async function importRuns(payload) {
   if (payload?.format !== EXPORT_FORMAT) {
     throw new Error(`不认识这个文件（format=${payload?.format ?? '缺失'}），期望 ${EXPORT_FORMAT}`);
   }
   const runs = Array.isArray(payload.runs) ? payload.runs : [];
-  for (const r of runs) if (r?.id) await saveRun(r);
-  return runs.length;
+  const rejected = [];
+  let imported = 0;
+  for (const r of runs) {
+    const problem = importProblem(r);
+    if (problem) { rejected.push({ id: r?.id ?? '(无 id)', problem }); continue; }
+    await saveRun(r);
+    imported += 1;
+  }
+  return { imported, rejected, total: runs.length };
 }
 
 /** Storage pressure is real: an L2 run carries ~870 samples. */

@@ -10,7 +10,12 @@
 // the same model measured twice already differs by 0.04.
 
 import { jsd } from '../stats/jsd.js';
-import { noiseFloor, validAnswersByCell } from '../stats/noise.js';
+import { noiseFloor, validAnswersByCell, comparableCells, REFERENCE_MIN_N } from '../stats/noise.js';
+
+// 🔴 One owner for "a reference cell is comparable" — see REFERENCE_MIN_N in stats/noise.js.
+// It was briefly a second constant here with the same value and a different comment, which
+// is a silent fork waiting for someone to raise one of them: selection would keep choosing
+// a 10-sample cell that identification had started dropping.
 import { mulberry32, drawWithReplacement, empiricalDist, percentile } from '../lib/rng.js';
 
 /** A cell whose two models produce the same distribution carries no information. */
@@ -34,7 +39,15 @@ export function selectCells(refSubject, refControl, { tier = 'l1', trials, seed 
 
   const subjectFp = refSubject?.fingerprint ?? {};
   const controlFp = refControl?.fingerprint ?? {};
-  const shared = Object.keys(subjectFp).filter((c) => controlFp[c]).sort();
+  // 🔴 The same per-cell sample bar every other layer applies, and the reason it matters
+  // MORE here than anywhere else: this function ranks by SNR, a cell measured once has a
+  // noise floor of exactly 0, and 0 in the denominator sorts it to the very front. The
+  // three worst-measured cells in the library would be the three the cheap screen picks —
+  // and L1's genuine band is then calibrated by resampling a pool with one distinct value
+  // in it, so an honest endpoint answering anything else there is called suspect.
+  const subjectOk = comparableCells(refSubject ?? {}, REFERENCE_MIN_N);
+  const controlOk = comparableCells(refControl ?? {}, REFERENCE_MIN_N);
+  const shared = Object.keys(subjectFp).filter((c) => subjectOk.has(c) && controlOk.has(c)).sort();
 
   // Noise is measured at the reps this tier will actually collect — a floor computed at
   // 30 reps would understate the noise of a 5-rep screen and make its SNR look better
@@ -44,12 +57,15 @@ export function selectCells(refSubject, refControl, { tier = 'l1', trials, seed 
   const scored = shared.map((cell) => {
     const [task_id, lang] = cell.split('|');
     const signal = jsd(subjectFp[cell], controlFp[cell]);
-    const n = noise.byCell[cell] ?? 0;
+    // ⚠️ Not `?? 0`. A missing floor means the pool could not be measured at all, and
+    // reading that as "no noise" is the same mistake in its purest form — it awards an
+    // infinite SNR to the one cell we know least about.
+    const n = noise.byCell[cell];
     return {
-      task_id, lang, cell, signal, noise: n,
-      // A zero floor means the cell is deterministic, so any signal at all is infinitely
-      // clean; Infinity sorts it to the front, which is correct.
-      snr: n > 0 ? signal / n : (signal > 0 ? Infinity : 0),
+      task_id, lang, cell, signal, noise: n ?? NaN,
+      // A zero floor means the cell is deterministic on a pool we DID measure, so any
+      // signal at all is infinitely clean; Infinity sorts it to the front, correctly.
+      snr: !Number.isFinite(n) ? 0 : (n > 0 ? signal / n : (signal > 0 ? Infinity : 0)),
     };
   });
 

@@ -61,6 +61,56 @@ test('a model compared with itself has no live cells at all', () => {
   assert.equal(self.dead.length, 8);
 });
 
+test('a cell the reference measured once is never selected, however clean it looks', () => {
+  // 🔴 This is the SNR ranking, so it is where an unmeasured cell does the most damage: a
+  // pool of one sample has a noise floor of exactly 0, 0 in the denominator sorts to the
+  // very front, and the three cells the cheap screen picks become the three the library
+  // knows least about. L1 then calibrates its genuine band by resampling a pool with one
+  // distinct value in it — so an honest endpoint answering anything else there fails the
+  // screen. The identification layer got this bar first; the screen ran a week without it.
+  const cells = Array.from({ length: 6 }, (_, i) => `w${i}|en`);
+  const build = (model, answer, thinAnswer) => ({
+    model,
+    fingerprint: Object.fromEntries(cells.map((c, i) => [c, { [i === 0 ? thinAnswer : answer]: 1 }])),
+    // Cell 0 came back once; the rest came back thirty times.
+    samples: cells.flatMap((c, i) => Array.from({ length: i === 0 ? 1 : 30 },
+      () => ({ cell: c, answer_class: 'valid', normalized: i === 0 ? thinAnswer : answer }))),
+  });
+  const subject = build('subj', 'a', 'p');
+  const control = build('ctl', 'b', 'q');   // cell 0 differs → maximum signal, zero noise
+
+  const l1 = selectCells(subject, control, { tier: 'l1', trials: 100 });
+  assert.ok(!l1.cells.some((c) => c.cell === 'w0|en'),
+    'the one-sample cell must not be chosen, and it would sort FIRST on SNR');
+  assert.equal(l1.cells.length, 3, 'the screen still gets its three cells from the rest');
+
+  const l2 = selectCells(subject, control, { tier: 'l2', trials: 100 });
+  assert.ok(!l2.cells.some((c) => c.cell === 'w0|en'), 'and L2 does not quietly take it either');
+  assert.equal(l2.cells.length, 5, 'every other live cell is still used');
+});
+
+test('a reference with no samples ranks nothing as infinitely clean', () => {
+  // 🔴 The one path where a floor can still be MISSING once the sample bar is in place: a
+  // reference carrying no `samples` at all keeps its whole fingerprint (it is refused on
+  // other grounds), so `noise.byCell` is empty for every cell. Reading that absence as
+  // `?? 0` means "no noise", which means infinite SNR — the cells we know nothing about
+  // sorting ahead of every cell we measured properly.
+  const cells = Array.from({ length: 5 }, (_, i) => `w${i}|en`);
+  const bare = (model, answer) => ({
+    model,
+    fingerprint: Object.fromEntries(cells.map((c) => [c, { [answer]: 1 }])),
+    // no samples
+  });
+  const sel = selectCells(bare('subj', 'a'), bare('ctl', 'b'), { tier: 'l1', trials: 50 });
+  assert.ok(sel.cells.every((c) => !Number.isFinite(c.noise)),
+    'the fixture must actually have unknowable floors, or this proves nothing');
+  assert.ok(sel.cells.every((c) => c.snr === 0),
+    `an unmeasurable floor is not a clean cell — got ${sel.cells.map((c) => c.snr).join(', ')}`);
+  // Still deterministic, and still returns a plan: the screen degrades to cell order rather
+  // than to a confident ranking built on nothing.
+  assert.deepEqual(sel.cells.map((c) => c.cell), ['w0|en', 'w1|en', 'w2|en']);
+});
+
 test('unknown tiers are rejected rather than defaulted', () => {
   assert.throws(() => selectCells(sol, g54, { tier: 'l3' }), /unknown tier/);
 });

@@ -233,6 +233,28 @@ code, kbd { font-family: var(--font-mono); font-size: 0.9em; }
 .note--sticky { border-left-color: var(--unknown); }
 .note--warn { border-left-color: var(--bad); }
 
+/* The placement ladder: distance, runner-up, and the two scale references. */
+.kv-row { display: flex; gap: var(--gap-2); align-items: baseline; padding: 0.3rem 0; font-size: var(--step--1); }
+.kv-row-label { flex: 0 0 auto; min-width: 12ch; color: var(--ink-dim); }
+.kv-row-value { flex: 0 0 auto; min-width: 7ch; text-align: right; color: var(--ink); font-weight: 500; }
+.kv-row-note { flex: 1 1 auto; color: var(--ink-faint); }
+.kv-row--scale { border-top: 1px dashed var(--line); }
+.kv-row--scale + .kv-row--scale { border-top: none; }
+
+/* The method, folded. The answer comes first; this is how it was reached. */
+.fold { border-top: 1px solid var(--line); padding-top: var(--gap-3); }
+.fold-summary {
+  cursor: pointer; list-style: none;
+  font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.04em;
+  color: var(--ink-dim); padding: 0.2rem 0;
+  transition: color 140ms var(--ease);
+}
+.fold-summary:hover { color: var(--brass); }
+.fold-summary::-webkit-details-marker { display: none; }
+.fold-summary::before { content: '▸  '; color: var(--ink-faint); }
+.fold[open] > .fold-summary::before { content: '▾  '; }
+.fold-body > .section:first-child { margin-top: var(--gap-3); }
+
 .stat { display: flex; flex-direction: column; gap: 0.2rem; }
 .stat-label { font-family: var(--font-mono); font-size: var(--label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
 .stat-value { font-family: var(--font-mono); font-size: var(--step-2); font-weight: 500; color: var(--ink); line-height: 1.1; }
@@ -383,6 +405,9 @@ code, kbd { font-family: var(--font-mono); font-size: 0.9em; }
 .dbar[data-tone="same"] .dbar-fill { background: var(--brass); }
 .dbar[data-tone="diff"] .dbar-fill { background: var(--line-strong); }
 .dbar[data-tone="best"] .dbar-fill { background: var(--ok); }
+/* The match IS the finding when it is not the model that was sold — green would read as
+   "confirmed good" on the bar that says you were served something else. */
+.dbar[data-tone="impostor"] .dbar-fill { background: var(--bad); }
 .dbar-value { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink); text-align: right; }
 .dbar-tag { color: var(--brass); margin-left: 0.4rem; font-size: 0.625rem; letter-spacing: 0.06em; }
 

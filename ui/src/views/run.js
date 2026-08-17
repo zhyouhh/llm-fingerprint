@@ -1,6 +1,6 @@
 import { h, clear, duration, int, pct } from '../ui/dom.js';
 import { normaliseBaseUrl, EndpointError } from '../core/endpoint.js';
-import { listModels, runL0, runL1, runL2, estimate, pickControl, clientsFor, DEFAULT_CONCURRENCY } from '../core/engine.js';
+import { listModels, runL0, runL1, runL2, estimate, clientsFor, DEFAULT_CONCURRENCY, tierAvailability } from '../core/engine.js';
 import { referencesFor, loadMatrix, isStale, ageInDays } from '../core/references.js';
 import { liveGrid } from '../components/fingerprint-grid.js';
 import { selectCells } from '../../../src/probe/cells.js';
@@ -10,7 +10,13 @@ import { saveRun, saveActive, clearActive, runId, listRuns } from '../core/store
 
 const PROTOCOL = 'responses';
 
-/** Working state. The key lives here and nowhere else — never in storage, never in a URL. */
+/**
+ * Working state. The key lives here and nowhere else — never in storage, never in a URL.
+ *
+ * `control` is the second model L2's maths needs. It is chosen by pickControl, never
+ * sampled and never shown: see engine.js for why asking a visitor to choose it was a
+ * design error rather than a missing feature.
+ */
 const state = {
   typed: '',
   baseUrl: null,
@@ -19,7 +25,10 @@ const state = {
   subject: '',
   control: '',
   tier: 'l1',
-  sampleControl: true,
+  /** The whole pickControl result, not just the name — see noRefReason(). */
+  yardstick: null,
+  avail: null,
+  sampleControl: false,
   concurrency: DEFAULT_CONCURRENCY,
 };
 
@@ -129,8 +138,10 @@ export async function view() {
     const withRef = offered.filter((m) => knownSet.has(m));
 
     state.subject = withRef[0] ?? offered[0] ?? '';
-    const auto = pickControl({ subject: state.subject, available: offered, matrix: mtx });
-    state.control = auto.control ?? '';
+    // One source for the yardsticks, and it is the testable one — see tierAvailability.
+    state.avail = tierAvailability({ subject: state.subject, known: knownSet, matrix: mtx });
+    state.yardstick = state.avail.yardstick;
+    state.control = state.avail.controlL1;
 
     const subjectSel = h('select.select', {
       onchange: (e) => { state.subject = e.target.value; refreshControl(); refreshTiers(); },
@@ -139,10 +150,6 @@ export async function view() {
       placeholder: '手动填模型名，如 gpt-5.6-sol', value: state.subject,
       oninput: (e) => { state.subject = e.target.value.trim(); refreshControl(); refreshTiers(); },
     });
-    const controlSel = h('select.select', {
-      onchange: (e) => { state.control = e.target.value; refreshTiers(); },
-    });
-    const controlNote = h('div.field-hint');
     const tierBox = h('div.tiers');
     const startBox = h('div', { style: { marginTop: 'var(--gap-3)' } });
     const refNote = h('div');
@@ -158,24 +165,22 @@ export async function view() {
       subjectSel.value = state.subject;
     }
 
+    // Named for what it still does: keep the offline yardstick and the freshness warning
+    // in step with whichever model is being tested. Nothing here reaches the screen.
     function refreshControl() {
-      const picked = pickControl({ subject: state.subject, available: offered, matrix: mtx });
-      clear(controlSel);
-      for (const c of picked.candidates) {
-        controlSel.append(h('option', { value: c.model }, `${c.model}  ·  与待验相距 ${c.distance.toFixed(3)}`));
-      }
-      if (!picked.candidates.length) {
-        controlSel.append(h('option', { value: '' }, '（这个端点没有可用的对照模型）'));
-      }
-      state.control = picked.candidates.some((c) => c.model === state.control)
-        ? state.control : (picked.control ?? '');
-      controlSel.value = state.control;
-      clear(controlNote);
-      controlNote.append(picked.control
-        ? h('span', '默认选了距离待验模型最远的那个——',
-            h('strong', 'D 越大，「换了模型」的尺度越清楚'),
-            '，选个近邻会让判定天然落进「说不准」。')
-        : h('span.field-error', '这个端点不提供第二个有参照的模型，L2 只能用 --no-control 跑（外壳算不出来）。'));
+      // 🔴 A yardstick PER TIER, because the tiers need different amounts of it. L1 screens
+      // on three cells; the identification route will not name a model under twelve. One
+      // pick at the lower bar enabled L2 and promised "which model is it", and then the run
+      // spent 150 probes to arrive at `withheld: 'cells'` — guaranteed before it started.
+      // Worse, a 10-live-cell candidate that happens to be farther away was preferred over
+      // a 40-cell one, turning a run that COULD have named a model into one that cannot.
+      //
+      // `rejected` is kept for the same reason it exists: "we hold no reference for this
+      // model" and "we hold several, none of which can serve as a yardstick" are different
+      // sentences, and the page used to print the first for both.
+      state.avail = tierAvailability({ subject: state.subject, known: knownSet, matrix: mtx });
+      state.yardstick = state.avail.yardstick;
+      state.control = state.avail.controlL1;
 
       // Reference freshness is a real expiry, not a formality: after a vendor swaps
       // weights the old reference stops representing the genuine model.
@@ -190,21 +195,39 @@ export async function view() {
       }
     }
 
+    /** Why a tier is unavailable, in terms of what the reader can do about it. */
+    function noRefReason(tier) {
+      if (!knownSet.has(state.subject)) return `参照库里没有 ${state.subject}`;
+      const r = tier === 'l2' ? state.yardstick?.l2 : state.yardstick?.l1;
+      if (tier === 'l2' && state.yardstick?.l1?.control) {
+        return `能跑快筛，但没有型号能和 ${state.subject} 凑够指认所需的格子数`
+          + '——指认要那么多，否则采完也只能说「格子不够」。';
+      }
+      if (r && !r.control && r.rejected?.length) {
+        return `参照库里有 ${state.subject}，但没有能当尺度的第二个型号：`
+          + r.rejected.slice(0, 2).map((c) => `${c.model}（${c.reason}）`).join('、');
+      }
+      return `参照库里没有能和 ${state.subject} 配对的型号`;
+    }
+
     async function refreshTiers() {
       clear(tierBox); clear(startBox);
-      const hasRef = knownSet.has(state.subject) && knownSet.has(state.control);
+      // 🔴 Per tier, because the yardstick is per tier. `hasRef` used to be one boolean over
+      // both, so L2 was offered whenever L1 could run.
+      const { l1: canL1, l2: canL2, controlL1: ctlL1, controlL2: ctlL2 } = state.avail;
+      state.control = (state.tier === 'l2' ? ctlL2 : ctlL1) || ctlL1;
 
       const plans = await Promise.all([
         estimate({ tier: 'l0', protocol: PROTOCOL }),
-        hasRef ? estimate({ tier: 'l1', model: state.subject, control: state.control, protocol: PROTOCOL }) : null,
-        hasRef ? estimate({ tier: 'l2', model: state.subject, control: state.control, protocol: PROTOCOL,
-                            sampleControl: state.sampleControl }) : null,
+        canL1 ? estimate({ tier: 'l1', model: state.subject, control: ctlL1, protocol: PROTOCOL }) : null,
+        canL2 ? estimate({ tier: 'l2', model: state.subject, control: ctlL2, protocol: PROTOCOL,
+                           sampleControl: state.sampleControl }) : null,
       ]);
 
       const defs = [
         ['l0', '画像', '端点类型、外壳注入量、透不透传 effort。不需要参照。', plans[0], true],
-        ['l1', '快筛', '3 个高区分度格子对正版参照。绿灯就到此为止。', plans[1], hasRef],
-        ['l2', '精确校准', '带对照模型，量出外壳再扣掉。唯一能分开「包装不同」和「不是同一个模型」的一层。', plans[2], hasRef],
+        ['l1', '快筛', '3 个高区分度格子对正版参照。回答「还是不是它」，绿灯就到此为止。', plans[1], canL1],
+        ['l2', '精确校准', '全部活格。回答「那它到底是哪个型号」——认得出参照库里这十个。', plans[2], canL2],
       ];
 
       for (const [tier, name, what, plan, enabled] of defs) {
@@ -216,29 +239,15 @@ export async function view() {
             ? `${tier.toUpperCase()} · ${int(plan.probes)} 次 · 约 ${duration(plan.minutes)}`
             : `${tier.toUpperCase()} · 需要参照`),
           h('div.tier-name', name),
-          h('div.tier-what', enabled ? what : `参照库里没有 ${knownSet.has(state.subject) ? state.control : state.subject}`),
-          plan?.cells ? h('div.tier-what.faint', `${plan.cells} 个活格 × ${plan.repsPerCell} 次${tier === 'l2' && state.sampleControl ? ' × 2 边' : ''}`) : null));
-      }
-
-      if (state.tier === 'l2') {
-        startBox.append(h('label.check',
-          h('input', {
-            type: 'checkbox', checked: state.sampleControl,
-            onchange: (e) => { state.sampleControl = e.target.checked; refreshTiers(); },
-          }),
-          h('span',
-            h('strong', '同时采对照模型'), '（探针翻倍）。',
-            h('br'),
-            '关掉能省一半，但外壳就没测出来，会整个算到模型头上。',
-            h('strong', '第一次测一个端点应该开着'),
-            '——外壳大不大，只有采了对照才知道。')));
+          h('div.tier-what', enabled ? what : noRefReason(tier)),
+          plan?.cells ? h('div.tier-what.faint', `${plan.cells} 个活格 × ${plan.repsPerCell} 次`) : null));
       }
 
       const plan = plans[['l0', 'l1', 'l2'].indexOf(state.tier)];
       startBox.append(h('div', { style: { marginTop: 'var(--gap-3)', display: 'flex', gap: 'var(--gap-2)', flexWrap: 'wrap', alignItems: 'center' } },
         h('button.btn.btn--primary', {
           type: 'button',
-          disabled: !state.subject || (state.tier !== 'l0' && !hasRef),
+          disabled: !state.subject || (state.tier === 'l1' && !canL1) || (state.tier === 'l2' && !canL2),
           onclick: () => start(plan),
         }, `开始 ${state.tier.toUpperCase()} · ${plan ? int(plan.probes) : '?'} 次请求`),
         h('span.faint', { style: { fontSize: 'var(--step--1)' } },
@@ -256,10 +265,6 @@ export async function view() {
           h('div.field-hint', models.length
             ? `这个端点报了 ${models.length} 个模型，其中 ${withRef.length} 个我们有正版参照。`
             : '没读到模型列表，手填即可。')),
-        h('div.field',
-          h('label.field-label', '对照模型'),
-          controlSel,
-          controlNote),
         refNote),
       h('div.section',
         h('div.section-head', h('div.eyebrow', '测多深')),
@@ -341,12 +346,16 @@ export async function view() {
         phase.textContent = state.tier === 'l1' ? '快筛采样' : '校准采样';
 
         const probeWrap = (p) => wrapProbe(p, cancel);
+        // 🔴 Both layers, and they do different jobs: `probeWrap` refuses probes that have
+        // not started, `cancelled` reaches the HTTP layer so a worker already parked in a
+        // shared 429 cooldown stops waiting and does not fire its retry.
+        const cancelled = () => cancel.requested;
         out = state.tier === 'l1'
           ? await runL1({ baseUrl: state.baseUrl, apiKey: state.apiKey, model: state.subject,
-                          control: state.control, protocol: PROTOCOL, probeWrap,
+                          control: state.control, protocol: PROTOCOL, probeWrap, cancelled,
                           onProgress: wrap(onProgress, cancel) })
           : await runL2({ baseUrl: state.baseUrl, apiKey: state.apiKey, model: state.subject,
-                          control: state.control, protocol: PROTOCOL, probeWrap,
+                          control: state.control, protocol: PROTOCOL, probeWrap, cancelled,
                           sampleControl: state.sampleControl, concurrency: state.concurrency,
                           onProgress: wrap(onProgress, cancel) });
       }
@@ -386,7 +395,8 @@ export async function view() {
      * twice burned hundreds of probes on a run that could never have produced an answer.
      */
     async function preflight(selection, cancelFlag) {
-      const { probe } = clientsFor({ baseUrl: state.baseUrl, apiKey: state.apiKey, protocol: PROTOCOL });
+      const { probe } = clientsFor({ baseUrl: state.baseUrl, apiKey: state.apiKey, protocol: PROTOCOL,
+        cancelled: () => cancelFlag?.requested === true });
       const cell = selection.cells[0];
       const { samples } = await runBattery({
         probe: wrapProbe(probe, cancelFlag), model: state.subject,
@@ -440,7 +450,11 @@ function wrapProbe(inner, cancel) {
     if (cancel?.requested) {
       return {
         raw: '', error: { status: null, code: 'cancelled', message: 'cancelled' },
-        http_status: null, latency_ms: 0, attempts: 0, usage: null,
+        // 🔴 `1`, not `0`. makeSample requires attempts >= 1 (判定语义⑤ — a sample that
+        // exists was attempted), so a zero here made Stop throw a contract error and the
+        // UI show "这次跑没能完成" instead of "已停止". One attempt is also the truth: the
+        // probe was invoked and refused.
+        http_status: null, latency_ms: 0, rate_limited_ms: 0, attempts: 1, usage: null,
         finish_reason: null, model_reported: null, reasoning_len: 0,
       };
     }

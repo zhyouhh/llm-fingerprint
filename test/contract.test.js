@@ -435,7 +435,7 @@ import { createResponsesClient, extractText, mapFinishReason } from '../src/prob
 import { createGetProbe } from '../src/probe/http/get.js';
 import { isRetryable } from '../src/probe/http/transport.js';
 
-const FAST_RETRY = { attempts: 3, baseDelayMs: 1 };   // 判定语义⑥ allows ms delays for exactly this
+const FAST_RETRY = { attempts: 3, baseDelayMs: 1, rateLimitCooldownMs: 1 };   // 判定语义⑥ allows ms delays for exactly this
 const snapshot = JSON.parse(
   readFileSync(new URL('./fixtures/chat-request-snapshot.json', import.meta.url), 'utf8'),
 );

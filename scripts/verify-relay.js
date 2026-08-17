@@ -17,7 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, resolveEndpointArg, runMain } from '../src/lib/cli.js';
 import { fingerprintProbeFactory, assertSameProtocol } from '../src/probe/http/fingerprint-probe.js';
-import { loadReference, resolveProtocol } from '../src/lib/reference-store.js';
+import { loadReference, loadAllReferences, resolveProtocol } from '../src/lib/reference-store.js';
 import { calibrateL2, CONSISTENT_RATIO, SUSPECT_RATIO } from '../src/layers/l2-calibrate.js';
 import { writeResultFile } from '../src/layers/result-file.js';
 import { VERDICT } from '../src/contracts.js';
@@ -52,9 +52,12 @@ await runMain(async () => {
   });
   const refSubject = loadReference(subject, fpProtocol);
   const refControl = loadReference(control, fpProtocol);
+  // The identification route needs the whole library, not the two this run samples.
+  const refs = loadAllReferences(fpProtocol);
 
   console.log(`verifying ${subject} @ ${endpoint.id} (${endpoint.base_url})`);
   console.log(`  control ${control}   reference collected ${refSubject.collected_utc ?? '(unknown)'}`);
+  console.log(`  candidates ${refs.map((r) => r.model).join(', ')}`);
 
   // Both references must agree with each other before either is compared to anything.
   assertSameProtocol(refSubject.fingerprint_protocol, refControl.fingerprint_protocol ?? 'chat');
@@ -62,13 +65,20 @@ await runMain(async () => {
 
   const out = await calibrateL2({
     probe: fingerprintProbeFactory(fpProtocol)({ baseUrl: endpoint.base_url, apiKey }),
-    subject, control, refSubject, refControl, fpProtocol, sampleControl, concurrency,
+    subject, control, refSubject, refControl, fpProtocol, refs, sampleControl, concurrency,
     onProgress: ({ done, total, model }) => process.stdout.write(`\r  ${model} ${done}/${total}   `),
   });
   const r = out.result;
 
   console.log(`\n\n  cells used       ${out.meta.cells.join(', ')}`);
-  console.log(`  noise floor      ${Number.isFinite(r.noise_floor) ? r.noise_floor.toFixed(4) : '—'}  (subtracted from all three)`);
+  // 🔴 Three floors, three comparisons. S and H are SAME-model (their whole measured
+  // distance is sampling noise, so the floor is the correction); D is CROSS-model, where
+  // the true distance is large and only a small bias sits on top — a same-model floor there
+  // over-subtracts more than tenfold, and D is a denominator.
+  const f = (x) => (Number.isFinite(x) ? x.toFixed(4) : '—');
+  console.log(`  floor  S         ${f(r.noise_floor)}  subject vs its reference — same model, so all noise`);
+  console.log(`  floor  H         ${f(r.noise_floor_h)}  control vs its reference`);
+  console.log(`  floor  D         ${f(r.noise_floor_d)}  cross-model sampling bias — much smaller by construction`);
   console.log('');
   console.log(sampleControl
     ? `  H  harness       ${fmt(r.h)} → ${fmt(r.h_c)}   ${control} across endpoints, same model both sides`
@@ -89,11 +99,23 @@ await runMain(async () => {
   console.log(`  live cells       ${r.live_cells}`);
   if (r.low_confidence) console.log('  ⚠️  low confidence — valid rate between 20% and 80%');
 
+  // What the distribution is SHAPED like, printed next to the numbers it can overrule.
+  const id = r.identification;
+  console.log(`\n  identification   ${id === null
+    ? 'not checked — no reference library was supplied'
+    : id.model
+      ? `${id.model}${id.impostor ? ' 🔴 NOT what was sold' : ' ✅ matches what was sold'}` +
+        `  (${fmt(id.distance)}, ${id.separation.toFixed(1)}× clear of ${id.runner_up}, ${id.cells} cells)`
+      : `no confident match — nearest ${id.nearest} at ${fmt(id.distance)}, only ` +
+        `${Number.isFinite(id.separation) ? `${id.separation.toFixed(1)}×` : 'n/a'} clear over ${id.cells} cells`}`);
+
   const label = {
     [VERDICT.CONSISTENT]: sampleControl
       ? `✅ consistent — the harness explains the gap; no model difference is needed`
       : `✅ consistent — the gap is inside the measurement noise (harness not measured)`,
-    [VERDICT.SUSPECT]: `🔴 suspect — the gap approaches what a genuinely different model produces`,
+    [VERDICT.SUSPECT]: r.identification?.impostor
+      ? `🔴 suspect — this is ${r.identification.model}, sold as ${subject}`
+      : `🔴 suspect — the gap approaches what a genuinely different model produces`,
     [VERDICT.INCONCLUSIVE]: '⚠️  inconclusive',
     [VERDICT.NOT_APPLICABLE]: '✗ not applicable — this endpoint cannot produce single-pass completions',
   }[r.verdict];

@@ -89,11 +89,11 @@ function how() {
      '端点类型、注入了多少 token 的外壳、透不透传 reasoning effort。谎称「官方 API 直连」当场戳穿，不需要任何参照。'],
     ['L1', '快筛', '15 次',
      '拿 3 个最有区分力的格子对本地正版参照。绿灯就到此为止——这一层便宜到可以天天跑。'],
-    // Deliberately a range, not a figure: the probe count is 活格数 × 15 × (采对照 ? 2 : 1),
-    // and the live-cell count depends on which control model the endpoint can offer. The
-    // run page computes the real number before anything is sent.
-    ['L2', '精确校准', '数百至千次',
-     '同时采一个对照模型，把「网关外壳造成的差异」量出来再扣掉，剩下的才是模型差异。唯一能分开「包装不同」和「不是同一个模型」的一层。'],
+    // Deliberately a range, not a figure: the probe count is 活格数 × 15, and how many
+    // cells are live depends on the model. The run page computes the real number before
+    // anything is sent.
+    ['L2', '精确校准', '约 400 次',
+     '把每个有区分力的格子都采满，然后问「这批分布最像十个官方型号里的哪一个」。掺假的话，它会指名道姓。'],
   ];
 
   return h('section.section',
@@ -107,17 +107,17 @@ function how() {
         h('p.muted', { style: { fontSize: 'var(--step--1)' } }, what)))),
 
     h('div.card', { style: { marginTop: 'var(--gap-3)' } },
-      h('div.card-title', '为什么必须有「对照模型」'),
+      h('div.card-title', '为什么答案是「像哪个型号」，而不是一个分数'),
       h('p.muted',
         '不同网关把请求包进不同外壳——注入的系统提示词长度不同、参数透传程度不同。',
-        '所以跨端点直接比指纹，差异里混着「外壳不同」和「模型不同」，分不开。'),
+        '所以跨端点直接比指纹，一个绝对距离里混着「外壳不同」和「模型不同」，分不开。'),
       h('p.muted',
-        'L2 的解法是：选一个双方都提供、且已独立确认为正版的对照模型，',
-        '它的跨端点距离就是',
-        h('strong', { style: { color: 'var(--ink)' } }, '纯外壳效应'),
-        '。把它测出来再扣掉。'),
+        '解法是不看绝对距离，看',
+        h('strong', { style: { color: 'var(--ink)' } }, '与次近型号的分离度'),
+        '：外壳把所有候选等量推远，做比值时就约掉了。剩下的是这批分布真正的形状。'),
       h('p.faint', { style: { fontSize: 'var(--step--1)' } },
-        '实测有效：一个注入 294 token 外壳的自建网关，扣掉外壳之后模型差距比外壳本身还小，判定为正版。')));
+        '实测：一家中转把 gpt-5.6-sol 和 gpt-5.4 两个名字都发成 gpt-5.6-luna，',
+        '两次都被指名道姓认了出来——而按分数判，它只到「证据不足」。')));
 }
 
 function limits() {

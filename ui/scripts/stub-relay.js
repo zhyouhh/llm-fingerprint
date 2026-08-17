@@ -25,6 +25,10 @@
 //   --empty <0..1>     fraction of probes that return an empty completion (reasoning burn)
 //   --fail <0..1>      fraction of probes that return HTTP 500
 //   --oneapi           stamp x-oneapi-request-id and serve an open /api/status
+//   --rpm <n>          allow n requests per rolling minute, then 429 with Retry-After.
+//                      Reproduces the failure that cost two real runs 102 and 137 probes:
+//                      a per-MINUTE quota against a retry policy that spends its whole
+//                      budget in 4.5 seconds.
 
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
@@ -42,6 +46,16 @@ const flag = (name, fallback = null) => {
 };
 
 const SERVES_SPEC = String(flag('serves', 'gpt-5.6-sol'));
+const RPM = flag('rpm', null) ? Number(flag('rpm')) : null;
+/** Timestamps of the completions served in the last minute. */
+const recent = [];
+function rateLimited() {
+  if (!RPM) return null;
+  const now = Date.now();
+  while (recent.length && now - recent[0] > 60_000) recent.shift();
+  if (recent.length < RPM) { recent.push(now); return null; }
+  return Math.ceil((60_000 - (now - recent[0])) / 1000);
+}
 const PORT = Number(flag('port', 8791));
 const INJECT = Number(flag('inject', 0));
 const EMPTY = Number(flag('empty', 0));
@@ -128,6 +142,15 @@ const server = createServer(async (req, res) => {
 
     if (FAIL > 0 && rng() < FAIL) {
       return send(500, { error: { message: 'stub: synthetic upstream failure', type: 'server_error' } });
+    }
+
+    // A per-MINUTE quota, which is the shape the real endpoints enforce and the shape a
+    // 4.5-second retry budget cannot survive.
+    const wait = rateLimited();
+    if (wait != null) {
+      return send(429, {
+        error: { message: 'stub: user requests-per-minute limit exceeded', code: 'rate_limit_exceeded', type: 'rate_limit_error' },
+      }, { 'retry-after': String(wait) });
     }
 
     const input = String(body.input ?? '').trim();

@@ -107,7 +107,7 @@ export async function runBattery({ probe, model, cells, reps = 30, concurrency =
         // an answer; `error` is what tells the two apart (判定语义③).
         raw: r.error ? '' : r.raw,
         error: r.error, http_status: r.http_status, attempts: r.attempts,
-        latency_ms: r.latency_ms, usage: r.usage,
+        latency_ms: r.latency_ms, rate_limited_ms: r.rate_limited_ms ?? 0, usage: r.usage,
         finish_reason: r.finish_reason, model_reported: r.model_reported,
         reasoning_len: r.reasoning_len ?? 0,
         key: `${model}|${job.task_id}|${job.lang}|1|${job.rep}`,

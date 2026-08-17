@@ -9,6 +9,7 @@
 // same component.
 
 import { h, pct, cellParts, LANG_LABEL, isRtl } from '../ui/dom.js';
+import { comparableCells, REFERENCE_MIN_N } from '../../../src/stats/noise.js';
 
 /** The winning answer in a cell, and how often it won. */
 export function modeOf(dist) {
@@ -29,9 +30,18 @@ export function modeOf(dist) {
  * @returns {string[]} cell keys, most discriminating first
  */
 export function discriminatingCells(refs) {
+  // 🔴 The same reference sample bar selection, the matrix and the verdict all apply — and
+  // it has to be an INTERSECTION over the models being shown, not a per-model filter whose
+  // results are then unioned. The grid draws every model's answer in every listed cell, so
+  // a cell that only A measured once still gets drawn for A the moment B and C carry it
+  // properly: the offending answer reappears on screen through a different door, and it is
+  // precisely the answer no decision layer would use.
+  const usable = refs.map((ref) => comparableCells(ref, REFERENCE_MIN_N));
+  const shownEverywhere = (cell) => usable.every((set) => set.has(cell));
   const counts = new Map();
   for (const ref of refs) {
     for (const [cell, dist] of Object.entries(ref.fingerprint ?? {})) {
+      if (!shownEverywhere(cell)) continue;
       const { answer } = modeOf(dist);
       if (answer == null) continue;
       if (!counts.has(cell)) counts.set(cell, new Set());

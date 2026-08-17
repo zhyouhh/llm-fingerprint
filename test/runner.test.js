@@ -10,7 +10,7 @@ import { createChatProbe } from '../src/probe/http/chat.js';
 import { rates, L1_LOGICAL_SAMPLES } from '../src/contracts.js';
 import { startStub, chatOk } from './helpers/stub-server.js';
 
-const FAST_RETRY = { attempts: 3, baseDelayMs: 1 };
+const FAST_RETRY = { attempts: 3, baseDelayMs: 1, rateLimitCooldownMs: 1 };
 const THREE_CELLS = [
   { task_id: 'num100-random', lang: 'en', reps: 2 },
   { task_id: 'num100-random', lang: 'zh', reps: 3 },
@@ -90,7 +90,7 @@ test('⑤ a network failure with no status code still counts as a transport fail
   // implementation that keys off status alone passes case ③ and lets this one through
   // as a successful empty completion.
   const probe = createChatProbe({
-    baseUrl: 'http://127.0.0.1:1/v1', apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 }, timeoutMs: 2000,
+    baseUrl: 'http://127.0.0.1:1/v1', apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1, rateLimitCooldownMs: 1 }, timeoutMs: 2000,
   });
   const { samples, counters } = await runBattery({ applyReasoningTrace: false,
     probe, model: 'stub-model', concurrency: 2,
@@ -120,7 +120,7 @@ test('the engine itself never retries — that belongs to the client', async () 
   // Two layers of three attempts is nine requests per probe. The stub counts the wire.
   const stub = await startStub([{ status: 429, json: {} }]);
   try {
-    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1 } });
+    const probe = createChatProbe({ baseUrl: stub.baseUrl, apiKey: 'k', retry: { attempts: 3, baseDelayMs: 1, rateLimitCooldownMs: 1 } });
     const { counters } = await runBattery({ applyReasoningTrace: false,
       probe, model: 'stub-model', concurrency: 1,
       cells: [{ task_id: 'num100-random', lang: 'en', reps: 1 }],

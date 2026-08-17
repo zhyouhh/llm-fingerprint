@@ -45,7 +45,14 @@ export function mapFinishReason(body) {
  * @returns {(args: {model, input, instructions?, maxOutputTokens?, reasoning?, extra?}) => Promise<object>}
  */
 export function createResponsesClient({ baseUrl, apiKey, timeoutMs = DEFAULT_TIMEOUT_MS,
-                                        retry = { attempts: RETRY_ATTEMPTS_DEFAULT, baseDelayMs: RETRY_BASE_DELAY_MS_DEFAULT } }) {
+                                        retry = { attempts: RETRY_ATTEMPTS_DEFAULT, baseDelayMs: RETRY_BASE_DELAY_MS_DEFAULT },
+                                        // 🔴 Threaded to `request`, or the shared 429 pause is
+                                        // uncancellable in practice: a worker already inside
+                                        // this call parks for the full cooldown and then
+                                        // retries, long after the user pressed Stop. The
+                                        // wrapper one layer up only guards probes that have
+                                        // not started yet.
+                                        cancelled = null }) {
   const url = `${baseUrl}/responses`;
 
   return async function ask({ model, input, instructions, maxOutputTokens = 16, reasoning, extra = {} }) {
@@ -62,7 +69,7 @@ export function createResponsesClient({ baseUrl, apiKey, timeoutMs = DEFAULT_TIM
       method: 'POST',
       headers: probeHeaders(apiKey),
       body: JSON.stringify(body),
-    }, { retry, timeoutMs });
+    }, { retry, timeoutMs, cancelled });
 
     return {
       raw: res.ok ? extractText(res.body) : '',
@@ -70,6 +77,10 @@ export function createResponsesClient({ baseUrl, apiKey, timeoutMs = DEFAULT_TIM
       http_status: res.status,
       latency_ms: res.latency_ms,
       attempts: res.attempts,
+      // Carried, not dropped: a run that succeeded only because it waited out a quota
+      // must be able to say so. Without it, 120/120 valid after minutes of parking looks
+      // identical to 120/120 that never hit a limit.
+      rate_limited_ms: res.rate_limited_ms ?? 0,
       usage: res.body?.usage ?? null,
       finish_reason: mapFinishReason(res.body),
       model_reported: res.body?.model ?? null,

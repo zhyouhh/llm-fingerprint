@@ -11,7 +11,7 @@
 import { normalizeRecords } from '../normalize/index.js';
 import { SAMPLE_KIND, classifySample, makeSample } from '../contracts.js';
 import { selectCells, calibrateL1Thresholds, combineThresholds } from '../probe/cells.js';
-import { loadReference, DEFAULT_PROTOCOL } from '../lib/reference-store.js';
+import { loadReference, loadAllReferences, DEFAULT_PROTOCOL } from '../lib/reference-store.js';
 import { evaluateL1 } from './l1-screen.js';
 import { evaluateL2 } from './l2-calibrate.js';
 import { genuineScreenScores } from './genuine-history.js';
@@ -107,7 +107,13 @@ export function rejudgeL2(file) {
   return {
     ...file,
     result: {
-      ...evaluateL2({ subjectSamples, controlSamples, refSubject, refControl, selection }),
+      // 🔴 The whole library, not the two references this run happened to sample. Re-judging
+      // means "by TODAY's yardstick", and today's yardstick includes every model collected
+      // since — which is exactly how a run stored before a candidate existed gets named.
+      ...evaluateL2({
+        subjectSamples, controlSamples, refSubject, refControl, selection,
+        refs: loadAllReferences(fpProtocol),
+      }),
       // Not part of the verdict; carried through so the report keeps its effort proxy.
       reasoning_rate: file.result?.reasoning_rate ?? null,
     },

@@ -10,6 +10,10 @@ data/upstream/
 # user baselines (contain endpoint URLs)
 baselines/
 
+# web-version run records saved by hand for analysis — same class as baselines/:
+# no keys, but the endpoint URL and hostname are in there.
+realtest/
+
 # run artefacts: var/runs/*.json result files, and the SQLite db from milestone 2
 var/
 

@@ -347,6 +347,44 @@ export const RETRY_ATTEMPTS_MIN = 3;      // current quick-check.js:63 is 3 tota
 export const RETRY_ATTEMPTS_MAX = 5;      // higher and the budget / ban risk runs away
 export const RETRY_ATTEMPTS_DEFAULT = 3;
 export const RETRY_BASE_DELAY_MS_DEFAULT = 1500; // matches the withRetry being removed from runner.js
+/**
+ * How long a 429 parks EVERY request to that target when the server sends no `Retry-After`.
+ *
+ * 🔴 Deliberately two orders of magnitude above `baseDelayMs`, and deliberately part of the
+ * retry contract rather than a constant inside the transport. The failure it answers is a
+ * per-MINUTE quota, which three attempts at 1.5s then 3s cannot outlast — that policy spent
+ * its entire budget in 4.5 seconds and lost 102 and 137 probes on two real runs. But it is
+ * configurable because a caller that sets `baseDelayMs: 1` is stating that it controls the
+ * pacing (a local stub, a contract test), and a hard-coded twenty seconds would override
+ * that and turn a millisecond test into a minute.
+ */
+export const RATE_LIMIT_COOLDOWN_MS_DEFAULT = 20_000;
+
+/**
+ * Wall clock — since the FIRST 429 of the current episode, not summed over callers — that a
+ * run will spend parked before it stops waiting and starts failing probes instead.
+ *
+ * 🔴 Summing per caller was the first version and it was wrong by the concurrency factor:
+ * six workers parking sixty seconds together spend sixty seconds of a run's life, not three
+ * hundred and sixty. Measured against a 40 rpm stub, that burned a five-minute budget in
+ * about fifty seconds — the throttling switched itself off exactly when it was needed, and
+ * 80 of 120 probes died with 16 of 24 cells short.
+ */
+export const RATE_LIMIT_BUDGET_MS_DEFAULT = 5 * 60_000;
+
+/**
+ * How long a target must go without a 429 before its budget window starts over.
+ *
+ * 🔴 A clear spell, not any single success. Without a reset the budget was gone for good
+ * five minutes after the first 429 — for the rest of the battery AND every later run in the
+ * same process or tab — which reproduces precisely the failure the mechanism exists for, one
+ * side clean and the other shredded. Keyed on a spell rather than a success because an
+ * endpoint alternating 429 and 200 would otherwise refresh the budget forever.
+ */
+export const RATE_LIMIT_RECOVERY_MS_DEFAULT = 60_000;
+
+/** Ceiling on the doubling backoff we invent ourselves; never applied to a stated Retry-After. */
+export const RATE_LIMIT_COOLDOWN_MAX_MS_DEFAULT = 90_000;
 
 /**
  * Validate BEFORE any request goes out. Never clamp and never silently fall back:
@@ -354,7 +392,21 @@ export const RETRY_BASE_DELAY_MS_DEFAULT = 1500; // matches the withRetry being 
  * reconciliation can never be trusted again.
  */
 export function assertRetryConfig(retry = {}) {
-  const { attempts = RETRY_ATTEMPTS_DEFAULT, baseDelayMs = RETRY_BASE_DELAY_MS_DEFAULT } = retry ?? {};
+  const {
+    attempts = RETRY_ATTEMPTS_DEFAULT,
+    baseDelayMs = RETRY_BASE_DELAY_MS_DEFAULT,
+    rateLimitCooldownMs = RATE_LIMIT_COOLDOWN_MS_DEFAULT,
+    // The two wall-clock windows the shared 429 pause is governed by. Configurable for the
+    // same reason `baseDelayMs` is: a test that has to spend five real minutes to reach the
+    // branch it is checking does not get written, and the branch stays unpinned.
+    rateLimitBudgetMs = RATE_LIMIT_BUDGET_MS_DEFAULT,
+    rateLimitRecoveryMs = RATE_LIMIT_RECOVERY_MS_DEFAULT,
+    // 🔴 Caps the pause WE invent when the server said nothing. It must never be applied to
+    // a `Retry-After` the server did state — capping that means going back early against an
+    // explicit instruction. Configurable so a test can reach the distinction without
+    // spending ninety real seconds; without that it stayed unpinned through two reviews.
+    rateLimitCooldownMaxMs = RATE_LIMIT_COOLDOWN_MAX_MS_DEFAULT,
+  } = retry ?? {};
   if (!isInt(attempts)) {
     usageError(`retry.attempts must be an integer (total attempts, not extra retries), ` +
                `got ${JSON.stringify(attempts)}`);
@@ -368,7 +420,26 @@ export function assertRetryConfig(retry = {}) {
   if (!isFiniteNum(baseDelayMs) || baseDelayMs <= 0) {
     usageError(`retry.baseDelayMs must be a finite number > 0 (ms), got ${JSON.stringify(baseDelayMs)}`);
   }
-  return Object.freeze({ attempts, baseDelayMs });
+  if (!isFiniteNum(rateLimitCooldownMs) || rateLimitCooldownMs < 0) {
+    usageError(`retry.rateLimitCooldownMs must be a finite number >= 0 (ms), ` +
+               `got ${JSON.stringify(rateLimitCooldownMs)}`);
+  }
+  if (!isFiniteNum(rateLimitBudgetMs) || rateLimitBudgetMs <= 0) {
+    usageError(`retry.rateLimitBudgetMs must be a finite number > 0 (ms), ` +
+               `got ${JSON.stringify(rateLimitBudgetMs)}`);
+  }
+  if (!isFiniteNum(rateLimitRecoveryMs) || rateLimitRecoveryMs < 0) {
+    usageError(`retry.rateLimitRecoveryMs must be a finite number >= 0 (ms), ` +
+               `got ${JSON.stringify(rateLimitRecoveryMs)}`);
+  }
+  if (!isFiniteNum(rateLimitCooldownMaxMs) || rateLimitCooldownMaxMs <= 0) {
+    usageError(`retry.rateLimitCooldownMaxMs must be a finite number > 0 (ms), ` +
+               `got ${JSON.stringify(rateLimitCooldownMaxMs)}`);
+  }
+  return Object.freeze({
+    attempts, baseDelayMs, rateLimitCooldownMs, rateLimitBudgetMs, rateLimitRecoveryMs,
+    rateLimitCooldownMaxMs,
+  });
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -480,11 +551,18 @@ export function assertL1Result(result) {
  */
 export function makeL2Result({ verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_lo, ratio_ci_hi,
                                sd_ratio, sd_ci_lo, sd_ci_hi, denominator_basis,
-                               noise_floor, subject, control, low_confidence, live_cells,
+                               noise_floor, noise_floor_h = null, noise_floor_d = null,
+                               subject, control, low_confidence, live_cells,
+                               identification = null,
                                reason = null, per_cell = null, dropped_cells = null }) {
   assertVerdict(verdict);
   if (typeof low_confidence !== 'boolean') usageError('L2 result: low_confidence must be a boolean');
   return Object.freeze({
+    // 🔴 `null` means the reference library was not supplied, so the question was never
+    // asked — NOT "asked, and nothing matched". Those are the two readings this project
+    // has repeatedly conflated (未测 vs 全挂), and here they differ by a whole verdict:
+    // the identification route is the only one that convicts a near-neighbour swap.
+    identification: identification === null ? null : Object.freeze({ ...identification }),
     verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_lo, ratio_ci_hi,
     // The suspect side of the judgement, reported on the same footing as the consistent
     // side — it is a decision input, not a debug value.
@@ -493,6 +571,12 @@ export function makeL2Result({ verdict, h, s, d, h_c, s_c, d_c, ratio, ratio_ci_
     // the measurement can resolve and the floor stood in for it.
     denominator_basis,
     noise_floor,
+    // 🔴 H, S and D are three different comparisons with three different resolution limits;
+    // `noise_floor` is S's, and these two travel beside it so a reader can audit which
+    // number corrected which quantity. Named explicitly because this builder picks fields
+    // by name — the same reason `reason` once vanished between being computed and being read.
+    noise_floor_h,
+    noise_floor_d,
     subject: Object.freeze({ ...subject }),   // {valid_rate, response_rate, n_valid, ...}
     // null when the control was deliberately not sampled — "not measured", which is a
     // different claim from "measured and came back zero".
@@ -524,6 +608,26 @@ export function assertL2Result(result) {
   if (!('control' in result)) usageError('L2 result must carry a control key, null if not sampled');
   if (result.control !== null && typeof result.control !== 'object') {
     usageError('L2 result: control must be an object or explicitly null');
+  }
+  // Same rule as the control side, for the same reason: an absent key reads as an
+  // oversight, and "not checked" must never be mistaken for "checked, clean".
+  if (!('identification' in result)) {
+    usageError('L2 result must carry an identification key, null when no reference library was supplied');
+  }
+  if (result.identification !== null) {
+    if (typeof result.identification !== 'object') {
+      usageError('L2 result: identification must be an object or explicitly null');
+    }
+    if (typeof result.identification.impostor !== 'boolean') {
+      usageError('L2 result: identification.impostor must be a boolean — it is a verdict input');
+    }
+  }
+  // A named impostor is the strongest finding this tool produces. If it were ever paired
+  // with a clean verdict, the file would contradict itself and whichever half a reader
+  // happened to look at would win.
+  if (result.identification?.impostor && result.verdict === VERDICT.CONSISTENT) {
+    usageError('L2 result: identification.impostor with verdict "consistent" — the run says the ' +
+               'endpoint serves a different model AND that it is the model it claims');
   }
   return result;
 }

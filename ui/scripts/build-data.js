@@ -21,7 +21,7 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PROTOCOL_IDS } from '../../src/lib/reference-store.js';
+import { PROTOCOL_IDS, isDatedSnapshot } from '../../src/lib/reference-store.js';
 import { selectCells, calibrateL1Thresholds } from '../../src/probe/cells.js';
 import { noiseFloor, validAnswersByCell } from '../../src/stats/noise.js';
 import { modelMatrix } from '../../src/layers/model-matrix.js';
@@ -38,16 +38,15 @@ const args = process.argv.slice(2);
 const outFlag = args.indexOf('--out');
 const OUT_DIR = outFlag >= 0 ? path.resolve(args[outFlag + 1]) : path.join(ROOT, 'ui', 'public', 'data');
 
-/** `genuine-gpt-5.6-sol.2026-08-14.json` is a dated backup; the model name itself has dots. */
-const DATED_SNAPSHOT = /\.\d{4}-\d{2}-\d{2}$/;
-
 function listReferences(protocol) {
   const dir = path.join(REFERENCE_DIR, protocol);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => f.startsWith('genuine-') && f.endsWith('.json'))
     .map((f) => f.slice('genuine-'.length, -'.json'.length))
-    .filter((model) => !DATED_SNAPSHOT.test(model))
+    // 🔴 Imported, never re-derived: a second copy of this pattern silently gave the CLI
+    // and the browser different candidate libraries. See reference-store.js.
+    .filter((model) => !isDatedSnapshot(model))
     .sort()
     .map((model) => ({ model, file: path.join(dir, `genuine-${model}.json`) }));
 }
@@ -113,10 +112,14 @@ function syntheticSamples(ref, selection) {
   return out;
 }
 
-function checkPair(fullA, fullB, leanA, leanB) {
+function checkPair(fullA, fullB, leanA, leanB, fullAll, leanAll) {
   const hydA = rehydrate(leanA);
   const hydB = rehydrate(leanB);
   const tag = `${fullA.model} vs ${fullB.model}`;
+  // 🔴 The identification route reads every reference in the library, so the slimming
+  // proof has to run it over the whole library on both sides — a lossless pair says
+  // nothing about a verdict that ranks all ten.
+  const hydAll = leanAll.map(rehydrate);
 
   for (const reps of [5, 15, 30]) {
     eq(`${tag}: noiseFloor @${reps} reps`,
@@ -146,8 +149,8 @@ function checkPair(fullA, fullB, leanA, leanB) {
       const controlSamples = syntheticSamples(fullB, selFull);
       for (const [label, ctrl] of [['with control', controlSamples], ['--no-control', null]]) {
         eq(`${tag}: evaluateL2 ${label}`,
-          evaluateL2({ subjectSamples, controlSamples: ctrl, refSubject: fullA, refControl: fullB, selection: selFull }),
-          evaluateL2({ subjectSamples, controlSamples: ctrl, refSubject: hydA, refControl: hydB, selection: selLean }));
+          evaluateL2({ subjectSamples, controlSamples: ctrl, refSubject: fullA, refControl: fullB, selection: selFull, refs: fullAll }),
+          evaluateL2({ subjectSamples, controlSamples: ctrl, refSubject: hydA, refControl: hydB, selection: selLean, refs: hydAll }));
       }
     }
   }
@@ -181,7 +184,7 @@ for (const protocol of PROTOCOL_IDS) {
   for (let i = 0; i < fulls.length; i += 1) {
     for (let j = 0; j < fulls.length; j += 1) {
       if (i === j) continue;
-      checkPair(fulls[i], fulls[j], leans[i], leans[j]);
+      checkPair(fulls[i], fulls[j], leans[i], leans[j], fulls, leans);
     }
   }
 

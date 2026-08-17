@@ -68,14 +68,15 @@ export function heatmap(m, { highlight = null } = {}) {
       short(m.models[i])));
     for (let j = 0; j < n; j += 1) {
       const distance = m.matrix[i][j];
-      const floorA = m.floors[i];
-      const floorB = m.floors[j];
-      const bar = Math.max(floorA, floorB);
+      // 🔴 The pair's own floor, measured on the cells these two share — not each
+      // model's whole-battery floor. The distance above is a mean over the intersection,
+      // so anything it is compared against has to be too.
+      const bar = m.pairFloors?.[i]?.[j] ?? NaN;
       const isDiagonal = i === j;
       // On the diagonal the "distance" IS the floor, so separation is 1 by definition —
       // which is the honest statement: a model is exactly one noise floor from itself.
       const separation = isDiagonal ? 1 : distance / bar;
-      const klass = isDiagonal ? 'self' : classifyPair(distance, floorA, floorB);
+      const klass = isDiagonal ? 'self' : classifyPair(distance, bar);
 
       // 🔴 The diagonal is deliberately NOT on the ramp. It is a model against itself, so
       // its separation is 1 by definition, and painting it with the ≤1 step — the alarming
@@ -107,8 +108,8 @@ export function heatmap(m, { highlight = null } = {}) {
 
   function showPair(i, j) {
     const distance = m.matrix[i][j];
-    const bar = Math.max(m.floors[i], m.floors[j]);
-    const klass = i === j ? 'self' : classifyPair(distance, m.floors[i], m.floors[j]);
+    const bar = m.pairFloors?.[i]?.[j] ?? NaN;
+    const klass = i === j ? 'self' : classifyPair(distance, bar);
     readout.replaceChildren(
       h('span.hm-pair', i === j ? `${m.models[i]} 与自己` : `${m.models[i]} ↔ ${m.models[j]}`),
       h('span.hm-stat', h('em', 'JSD'), fmt(distance)),

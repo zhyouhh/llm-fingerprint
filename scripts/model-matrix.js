@@ -51,7 +51,8 @@ await runMain(async () => {
     const j = JSON.parse(readFileSync(referencePath(m, protocol), 'utf8'));
     return { model: m, fingerprint: j.fingerprint, samples: j.samples, reps: j.reps ?? 30, collected: j.collected_utc };
   });
-  const { matrix, floors, cells } = modelMatrix(refs);
+  const m = modelMatrix(refs);
+  const { matrix, floors, pairFloors, cells } = m;
 
   const w = Math.max(...models.map((m) => m.length)) + 1;
   console.log(`\n${protocol} 线，${models.length} 个模型，${Math.min(...cells.flat().filter(Boolean))}–${Math.max(...cells.flat())} 个共同格\n`);
@@ -63,14 +64,19 @@ await runMain(async () => {
     }).join('') + `   ${i}`);
   });
 
-  console.log('\n对角线 = 该模型自己的噪声地板（同一模型采两次的距离）。');
-  console.log('某格 ≤ 两行对角线的较大者 → 分不出来；≤ 两倍 → 接近；更大 → 不同模型。\n');
+  console.log('\n对角线 = 该模型自己的噪声地板（同一模型采两次的距离），供参考。');
+  // 🔴 Not "compare against the two diagonals". Each diagonal is a mean over that model's
+  // whole battery; the cell is a mean over the pair's intersection. When two references
+  // cover different cells those are different measurements, and following the old
+  // instruction by hand reproduces the misclassification the code no longer makes.
+  console.log('判定用的是每一对自己的地板（只在它们共有的格子上量），见下面的清单——');
+  console.log('≤ 该对地板 → 分不出来；≤ 两倍 → 接近；更大 → 不同模型。\n');
 
   // The pairs a substitution would actually hide behind: closest first.
   const pairs = [];
   for (let i = 0; i < models.length; i += 1) {
     for (let j = i + 1; j < models.length; j += 1) {
-      pairs.push({ a: models[i], b: models[j], d: matrix[i][j], verdict: classifyPair(matrix[i][j], floors[i], floors[j]) });
+      pairs.push({ a: models[i], b: models[j], d: matrix[i][j], bar: pairFloors[i][j], verdict: classifyPair(matrix[i][j], pairFloors[i][j]) });
     }
   }
   pairs.sort((x, y) => x.d - y.d);
@@ -90,7 +96,13 @@ await runMain(async () => {
   if (args.json) {
     const out = typeof args.json === 'string' ? args.json : 'var/model-matrix.json';
     writeFileSync(path.resolve(ROOT, out), `${JSON.stringify({
-      fingerprint_protocol: protocol, models, matrix, floors, cells,
+      fingerprint_protocol: protocol,
+      // 🔴 Spread, not a field list. Listing them by name is how `live` was left out the
+      // moment it was added — and a consumer feeding this export to `pickControl` then sees
+      // zero discriminating cells for every candidate and refuses the whole library. Same
+      // lesson as `makeL2Result` dropping `reason`: a builder that enumerates what it keeps
+      // silently discards whatever it has not been told about yet.
+      ...m,
       collected: refs.map((r) => r.collected), pairs,
     }, null, 2)}\n`);
     console.log(`\n  saved ${out}`);

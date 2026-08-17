@@ -13,7 +13,7 @@
 // the merge structurally same-protocol — there is no longer a file to inherit the wrong
 // cells from. loadReference still checks the stamp, for files moved by hand.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { usageError } from './errors.js';
@@ -64,6 +64,16 @@ export function loadReference(model, protocol, opts = {}) {
   } catch (err) {
     usageError(`reference is not valid JSON (${path.relative(REPO_ROOT, file)}): ${err.message}`);
   }
+  // 🔴 The file must be the model it was asked for. evaluateL2 defends `refSubject.model`,
+  // not the name the caller passed, so luna's content sitting in genuine-sol.json would
+  // have an honest sol measured against luna's fingerprint — and quite possibly convicted
+  // of serving the model it does serve. Same class of failure as the protocol check below,
+  // one field over.
+  if (parsed.model !== model) {
+    usageError(`${path.relative(REPO_ROOT, file)} declares model ${JSON.stringify(parsed.model)} ` +
+               `but was loaded as ${JSON.stringify(model)}. Every comparison against it would be ` +
+               `against the wrong model's fingerprint. Rename the file or re-collect it.`);
+  }
   const declared = parsed.fingerprint_protocol ?? DEFAULT_PROTOCOL;
   if (declared !== protocol) {
     usageError(`${path.relative(REPO_ROOT, file)} sits under ${protocol}/ but declares ` +
@@ -71,6 +81,42 @@ export function loadReference(model, protocol, opts = {}) {
                `comparing against it would silently mix wires. Move it to ${declared}/ or re-collect.`);
   }
   return parsed;
+}
+
+/**
+ * 🔴 The ONE test for "this file is a dated backup, not a current reference".
+ *
+ * `genuine-gpt-5.6-sol.2026-08-14.json` and `...2026-08-14-1.json` are both backups, and
+ * the model name itself contains dots, so the suffix has to be matched precisely. This
+ * lived twice — here and in ui/scripts/build-data.js — with the second copy missing the
+ * `-N` form, so adding one backup would have given the CLI and the browser DIFFERENT
+ * candidate libraries: the browser would have ranked a near-duplicate of the sold model as
+ * runner-up, collapsing separation below the bar and turning an accusation into a shrug.
+ * The browser's own bit-for-bit proof could not catch it, because both sides of that proof
+ * used the browser's list.
+ */
+export const isDatedSnapshot = (model) => /\.\d{4}-\d{2}-\d{2}(-\d+)?$/.test(model);
+
+/**
+ * Every current reference on one wire, for the identification layer — the question
+ * "which of the models we hold is this shaped like" has no answer with only two of them.
+ *
+ * 🔴 Dated snapshots (`genuine-<model>.2026-08-14.json`) are excluded. They are the same
+ * model at an older collection, so leaving them in would put a near-duplicate next to
+ * every candidate and crush the separation ratio the naming rule depends on.
+ *
+ * @returns {Array<{model, fingerprint, ...}>} sorted by model, so callers are deterministic
+ */
+export function loadAllReferences(protocol, { root = DEFAULT_REFERENCE_ROOT } = {}) {
+  assertKnown(protocol);
+  const dir = path.join(root, protocol);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /^genuine-.+\.json$/.test(f))
+    .map((f) => f.replace(/^genuine-|\.json$/g, ''))
+    .filter((model) => !isDatedSnapshot(model))
+    .sort()
+    .map((model) => loadReference(model, protocol, { root }));
 }
 
 /** Protocols that have a reference for EVERY model in `models`. */
