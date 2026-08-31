@@ -19,3 +19,23 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-party code
+
+`vendor/pamela/` is NOT covered by the copyright line above. It is vendored
+upstream code from the PAMELA project by Tomáš Bruckner, reused verbatim under
+its own MIT license:
+
+  Copyright (c) 2026 Tomáš Bruckner
+
+  Single-token output distributions as behavioral fingerprints of large
+  language models — software. DOI: 10.5281/zenodo.21278793
+
+The full license text and the provenance note for it are in
+`vendor/pamela/LICENSE`; what was vendored, and whether each file was modified,
+is recorded in `vendor/pamela/ATTRIBUTION.md`.
+
+The paper's dataset (DOI: 10.5281/zenodo.21278557) is CC-BY-4.0 and is NOT
+redistributed here — `npm run fetch-data` downloads it from Zenodo at first use.

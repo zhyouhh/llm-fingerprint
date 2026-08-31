@@ -1,6 +1,16 @@
 {
-  "_comment": "端点清单。字段设计借鉴 cuihuan/llm-gateway-bench (MIT) 的 gateways.json。绝不在这里放 key —— auth_env 只写环境变量的名字。",
+  "_comment": "端点清单模板。复制为 config/endpoints.json 再填（那份是 gitignored 的）。字段设计借鉴 cuihuan/llm-gateway-bench (MIT) 的 gateways.json。绝不在这里放 key —— auth_env 只写环境变量的名字，值放 .env。",
   "endpoints": [
+    {
+      "id": "official",
+      "name": "OpenAI 官方 API",
+      "base_url": "https://api.openai.com/v1",
+      "protocol": "responses",
+      "auth_env": "OPENAI_API_KEY",
+      "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
+      "notes": "genuine:true 的端点是采参照的来源（refresh-reference.js 只肯在这种端点上跑）。厂商 API 按定义即 ground truth，无需推断。⚠️ 官方只能走 responses：chat 口径的请求体带 `reasoning:{enabled:false}`，那是 OpenRouter 扩展，官方 400 Unknown parameter。",
+      "genuine": true
+    },
     {
       "id": "example-relay",
       "name": "示例中转",
@@ -8,7 +18,7 @@
       "protocol": "responses",
       "auth_env": "EXAMPLE_RELAY_API_KEY",
       "models": { "subject": "gpt-5.6-sol", "control": "gpt-5.4" },
-      "notes": "protocol 只决定 reasoning 档探测走哪条协议；指纹层永远走 /chat/completions"
+      "notes": "protocol 只决定 reasoning 档探测走哪条协议；指纹层由 --fp-protocol 决定，且参照与待测必须同协议（代码会拦）"
     },
     {
       "id": "chat-only-relay",

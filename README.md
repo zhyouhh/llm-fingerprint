@@ -22,9 +22,14 @@
 | **relay-A** | 🟠 **时真时假**——同一天相隔一小时，一次真货一次 luna | ✅ 真 5.4 |
 | **relay-B** | 🔴 **`gpt-5.6-luna`** | 🔴 **也是 `gpt-5.6-luna`** |
 
+> **口径**：`relay-A`…`relay-E` 是代号，不点名具体服务商。这些是**本方法在 2026-08-14
+> 一个采集时期内的测量结果**，不是对任何经营者的事实指控——除 relay-A 外都是**单次结论**，
+> 而 relay-A 恰恰是「单次通过、第二次才暴露」的那个。判据本身也是 in-sample 的
+> （阈值对着这十来次跑定的，没有留出集）。想复现请自己跑，别把这张表当结论引用。
+
 掺的是 `gpt-5.6-luna`——sol 的**同代兄弟型号**，更便宜、行为接近但不同。判据不是"看起来不太对"，
 而是：relay-B 的「sol」到官方 luna 参照的 JSD 是 **0.0237**，低于噪声地板 0.0833（= 测不出区别），
-而真 sol↔真 luna 是 0.1815。**近 8 倍，没有解释空间。**
+而真 sol↔真 luna 是 0.1815。**近 8 倍**——外壳、采样参数、订阅/API 差异都解释不了这个量级。
 
 最硬的一条证据是**两家毫无关系的中转在同样的格子上换成同样的答案**
 （`47→73`、`turquoise→teal`、`زرافة→فيل`）——外壳、采样参数、订阅/API 差异都解释不了它。
@@ -65,8 +70,8 @@ npm --prefix ui run deploy   # → llmfingerprint.z0y0h.work
 node ui/scripts/stub-relay.js --serves 'gpt-5.6-sol=gpt-5.6-luna' --port 8791
 ```
 
-**端点怎么配**：候选端点写在 [`config/endpoints.json`](./config/endpoints.json)
-（提交进 git，**不含 key**），每个端点用 `auth_env` 指名一个环境变量；
+**端点怎么配**：候选端点写在 `config/endpoints.json`
+（**gitignored**，模板见 [`config/endpoints.example.json`](./config/endpoints.example.json)；**不含 key**），每个端点用 `auth_env` 指名一个环境变量；
 key 放 `.env`（已 gitignored）。示例见 `config/endpoints.example.json`。
 此后所有 CLI 都是 `--endpoint <id>`，不再传 URL 和 key。
 

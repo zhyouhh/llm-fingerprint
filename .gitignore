@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# the real endpoint list: no keys (auth_env only names the variable), but it holds
+# the base_url of every candidate relay and of the self-hosted gateway.
+# config/endpoints.example.json is the committed template — copy it and fill it in.
+config/endpoints.json
+
 # upstream Zenodo data (~52MB) — npm run fetch-data
 data/upstream/
 *.zip

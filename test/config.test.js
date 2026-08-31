@@ -110,9 +110,14 @@ test('a key pasted into the config file is rejected outright', () => {
   );
 });
 
-test('the repo config itself is valid and key-free', () => {
-  const all = loadEndpoints();                       // default path
+// The committed template, not config/endpoints.json — that one is gitignored (it holds
+// the base_url of every real candidate), so a fresh clone has only the example to check.
+test('the committed example config is valid and key-free', () => {
+  const examplePath = path.join(
+    path.dirname(new URL(import.meta.url).pathname), '..', 'config', 'endpoints.example.json',
+  );
+  const all = loadEndpoints({ configPath: examplePath });
   assert.ok(all.length >= 1, 'at least one candidate endpoint is configured');
-  assert.doesNotMatch(JSON.stringify(all), /sk-/, 'no key material in config/endpoints.json');
+  assert.doesNotMatch(JSON.stringify(all), /sk-/, 'no key material in the example config');
   for (const ep of all) assert.ok(ep.auth_env.length > 0);
 });
